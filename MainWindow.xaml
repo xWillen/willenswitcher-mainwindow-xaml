@@ -15,6 +15,8 @@
         <SolidColorBrush x:Key="TextWhite" Color="#FFFFFF" />
         <SolidColorBrush x:Key="BorderBrush" Color="#232733" />
         <SolidColorBrush x:Key="DangerBrush" Color="#F87171" />
+        <SolidColorBrush x:Key="NoteBorderBrush" Color="#303544" />
+        <SolidColorBrush x:Key="NoteFocusBorderBrush" Color="#7C5CFC" />
 
         <Style x:Key="NavButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource TextWhite}" />
@@ -85,6 +87,32 @@
             <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
         </Style>
 
+        <Style x:Key="NoteTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="7,5" />
+            <Setter Property="Margin" Value="-7,3,0,0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="AcceptsReturn" Value="True" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="Cursor" Value="IBeam" />
+            <Setter Property="ToolTip" Value="Edit account note" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="{StaticResource NoteBorderBrush}" />
+                </Trigger>
+                <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource TextWhite}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource NoteFocusBorderBrush}" />
+                    <Setter Property="Background" Value="#191D28" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <Style x:Key="AccountItemStyle" TargetType="ListBoxItem">
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Padding" Value="0" />
@@ -126,7 +154,7 @@
             <StackPanel Grid.Row="1" Margin="12,38,12,0">
                 <Button Style="{StaticResource NavButtonStyle}">
                     <StackPanel Orientation="Horizontal">
-                        <Image Source="Assets/steam.png"
+                        <Image Source="pack://application:,,,/Assets/steam.png"
                                Width="18"
                                Height="18"
                                Margin="0,0,12,0"
@@ -137,7 +165,7 @@
                 </Button>
                 <Button Style="{StaticResource NavButtonStyle}">
                     <StackPanel Orientation="Horizontal">
-                        <Image Source="Assets/riot.png"
+                        <Image Source="pack://application:,,,/Assets/riot.png"
                                Width="18"
                                Height="18"
                                Margin="0,0,12,0"
@@ -148,7 +176,7 @@
                 </Button>
                 <Button Style="{StaticResource NavButtonStyle}">
                     <StackPanel Orientation="Horizontal">
-                        <Image Source="Assets/epic.png"
+                        <Image Source="pack://application:,,,/Assets/epic.png"
                                Width="18"
                                Height="18"
                                Margin="0,0,12,0"
@@ -215,12 +243,7 @@
                                                FontSize="15"
                                                Foreground="{StaticResource TextWhite}" />
                                     <TextBox Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}"
-                                             Background="Transparent"
-                                             BorderThickness="0"
-                                             Foreground="{StaticResource MutedBrush}"
-                                             FontSize="12"
-                                             Padding="0"
-                                             Margin="0,5,0,0" />
+                                             Style="{StaticResource NoteTextBoxStyle}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1"
                                             Orientation="Horizontal"
