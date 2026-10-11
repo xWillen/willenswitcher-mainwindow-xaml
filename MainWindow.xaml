@@ -2,86 +2,239 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="W11len Switcher"
-        Width="1100" Height="720" MinWidth="850" MinHeight="560"
+        Width="950"
+        Height="600"
+        MinWidth="800"
+        MinHeight="500"
         WindowStartupLocation="CenterScreen"
-        Background="#0F1117"
-        Foreground="#F4F6FA">
+        Background="#0F1117">
     <Window.Resources>
         <SolidColorBrush x:Key="PanelBrush" Color="#161922" />
-        <SolidColorBrush x:Key="CardBorderBrush" Color="#232733" />
-        <SolidColorBrush x:Key="MutedBrush" Color="#9CA3AF" />
-        <SolidColorBrush x:Key="IconBrush" Color="#A7ADBB" />
+        <SolidColorBrush x:Key="MutedBrush" Color="#9299AA" />
         <SolidColorBrush x:Key="AccentBrush" Color="#7C5CFC" />
-        <SolidColorBrush x:Key="AccentHoverBrush" Color="#8B5CF6" />
-        <SolidColorBrush x:Key="DangerBrush" Color="#FF7B83" />
-        <SolidColorBrush x:Key="DangerPanelBrush" Color="#2A1D24" />
+        <SolidColorBrush x:Key="TextWhite" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="BorderBrush" Color="#232733" />
+        <SolidColorBrush x:Key="DangerBrush" Color="#F87171" />
+
         <Style x:Key="NavButtonStyle" TargetType="Button">
-            <Setter Property="Foreground" Value="#D8DBE5" />
+            <Setter Property="Foreground" Value="{StaticResource TextWhite}" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="12,11" />
+            <Setter Property="Padding" Value="12,10" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
-            <Setter Property="RenderTransform"><Setter.Value><ScaleTransform ScaleX="1" ScaleY="1" /></Setter.Value></Setter>
-            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
-                <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}"><ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True" /></Border>
-                <ControlTemplate.Triggers>
-                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ButtonBorder" Property="Background" Value="#232733" /><Trigger.EnterActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="0.96" Duration="0:0:0.12" /><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)" To="0.96" Duration="0:0:0.12" /></Storyboard></BeginStoryboard></Trigger.EnterActions><Trigger.ExitActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.12" /><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.12" /></Storyboard></BeginStoryboard></Trigger.ExitActions></Trigger>
-                    <Trigger Property="IsPressed" Value="True"><Setter TargetName="ButtonBorder" Property="Opacity" Value="0.82" /><Trigger.EnterActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="1.03" Duration="0:0:0.06" /><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)" To="1.03" Duration="0:0:0.06" /></Storyboard></BeginStoryboard></Trigger.EnterActions><Trigger.ExitActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="0.96" Duration="0:0:0.08" /><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)" To="0.96" Duration="0:0:0.08" /></Storyboard></BeginStoryboard></Trigger.ExitActions></Trigger>
-                    <Trigger Property="IsEnabled" Value="False"><Setter TargetName="ButtonBorder" Property="Opacity" Value="0.45" /></Trigger>
-                </ControlTemplate.Triggers>
-            </ControlTemplate></Setter.Value></Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#232733" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.75" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
-        <Style x:Key="ActionButtonStyle" TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
-            <Setter Property="Foreground" Value="White" /><Setter Property="Background" Value="{StaticResource AccentBrush}" /><Setter Property="Padding" Value="14,9" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="HorizontalContentAlignment" Value="Center" />
-            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
-                <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" CornerRadius="7" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-                <ControlTemplate.Triggers>
-                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ButtonBorder" Property="Background" Value="{StaticResource AccentHoverBrush}" /><Trigger.EnterActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="0.96" Duration="0:0:0.12" /><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)" To="0.96" Duration="0:0:0.12" /></Storyboard></BeginStoryboard></Trigger.EnterActions><Trigger.ExitActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.12" /><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.12" /></Storyboard></BeginStoryboard></Trigger.ExitActions></Trigger>
-                    <Trigger Property="IsPressed" Value="True"><Setter TargetName="ButtonBorder" Property="Opacity" Value="0.82" /><Trigger.EnterActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="1.03" Duration="0:0:0.06" /><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)" To="1.03" Duration="0:0:0.06" /></Storyboard></BeginStoryboard></Trigger.EnterActions><Trigger.ExitActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="0.96" Duration="0:0:0.08" /><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)" To="0.96" Duration="0:0:0.08" /></Storyboard></BeginStoryboard></Trigger.ExitActions></Trigger>
-                    <Trigger Property="IsEnabled" Value="False"><Setter TargetName="ButtonBorder" Property="Opacity" Value="0.45" /></Trigger>
-                </ControlTemplate.Triggers>
-            </ControlTemplate></Setter.Value></Setter>
+
+        <Style x:Key="ActionButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource TextWhite}" />
+            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="14,9" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="7"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.88" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.72" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
-        <Style x:Key="DeleteButtonStyle" TargetType="Button" BasedOn="{StaticResource NavButtonStyle}"><Setter Property="Foreground" Value="{StaticResource DangerBrush}" /><Setter Property="Background" Value="{StaticResource DangerPanelBrush}" /><Setter Property="Padding" Value="12,9" /><Setter Property="HorizontalContentAlignment" Value="Center" /></Style>
+
+        <Style x:Key="CardActionButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
+            <Setter Property="Padding" Value="12,7" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+
+        <Style x:Key="DeleteButtonStyle" TargetType="Button" BasedOn="{StaticResource CardActionButtonStyle}">
+            <Setter Property="Background" Value="#392027" />
+            <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
+        </Style>
+
+        <Style x:Key="AccountItemStyle" TargetType="ListBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <ContentPresenter />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
+
     <Grid>
-        <Grid.ColumnDefinitions><ColumnDefinition Width="220" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-        <Border Grid.Column="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,0,1,0" Padding="20">
-            <Grid>
-                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                <StackPanel Grid.Row="0" Margin="0,4,0,30"><TextBlock Text="W11len Switcher" FontSize="20" FontWeight="Bold" Foreground="White" /><TextBlock Text="ACCOUNT MANAGER" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}" Margin="0,7,0,0" /></StackPanel>
-                <StackPanel Grid.Row="1"><TextBlock Text="PLATFORMS" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}" Margin="4,0,0,10" />
-                    <Button Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal"><Viewbox Width="18" Height="18" Stretch="Uniform" Margin="0,0,12,0"><Path Fill="{StaticResource IconBrush}" Data="M12,2 C6.48,2 2,6.48 2,12 C2,17.52 6.48,22 12,22 C17.52,22 22,17.52 22,12 C22,6.48 17.52,2 12,2 Z M11,6 L13,6 13,11 11,11 Z M12,15.5 A1.25,1.25 0 1 0 12,18 A1.25,1.25 0 1 0 12,15.5 Z" /></Viewbox><TextBlock Text="Steam" VerticalAlignment="Center" /></StackPanel></Button>
-                    <Button Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal"><Viewbox Width="18" Height="18" Stretch="Uniform" Margin="0,0,12,0"><Path Fill="{StaticResource IconBrush}" Data="M12,2 L2.5,7.5 6,21 18,21 21.5,7.5 Z M12,5.2 L17.8,8.6 15.6,17.1 8.4,17.1 6.2,8.6 Z" /></Viewbox><TextBlock Text="Riot Games" VerticalAlignment="Center" /></StackPanel></Button>
-                    <Button Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal"><Viewbox Width="18" Height="18" Stretch="Uniform" Margin="0,0,12,0"><Path Fill="{StaticResource IconBrush}" Data="M4,3 L11,3 11,10 4,10 Z M13,3 L20,3 20,10 13,10 Z M4,12 L11,12 11,21 4,21 Z M13,12 L20,12 20,21 13,21 Z" /></Viewbox><TextBlock Text="Epic Games" VerticalAlignment="Center" /></StackPanel></Button>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Grid Grid.Column="0" Background="{StaticResource PanelBrush}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0" Margin="22,24,18,0">
+                <TextBlock Text="W11len Switcher"
+                           FontSize="16"
+                           FontWeight="Bold"
+                           Foreground="{StaticResource TextWhite}" />
+                <TextBlock Text="Account Manager"
+                           FontSize="12"
+                           Foreground="{StaticResource MutedBrush}"
+                           Margin="0,5,0,0" />
+            </StackPanel>
+            <StackPanel Grid.Row="1" Margin="12,38,12,0">
+                <Button Style="{StaticResource NavButtonStyle}">
+                    <StackPanel Orientation="Horizontal">
+                        <Viewbox Width="18" Height="18" Margin="0,0,12,0">
+                            <Path Fill="{StaticResource MutedBrush}"
+                                  Data="M12,2 C6.48,2 2,6.48 2,12 C2,17.52 6.48,22 12,22 C17.52,22 22,17.52 22,12 C22,6.48 17.52,2 12,2 Z M11,6 L13,6 13,11 11,11 Z M12,15 A1,1 0 1 0 12,17 A1,1 0 1 0 12,15 Z" />
+                        </Viewbox>
+                        <TextBlock Text="Steam" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource NavButtonStyle}">
+                    <StackPanel Orientation="Horizontal">
+                        <Viewbox Width="18" Height="18" Margin="0,0,12,0">
+                            <Path Fill="{StaticResource MutedBrush}"
+                                  Data="M12,2 L2.5,7.5 6,21 18,21 21.5,7.5 Z M12,5 L17,8 15,17 9,17 7,8 Z" />
+                        </Viewbox>
+                        <TextBlock Text="Riot Games" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource NavButtonStyle}">
+                    <StackPanel Orientation="Horizontal">
+                        <Viewbox Width="18" Height="18" Margin="0,0,12,0">
+                            <Path Fill="{StaticResource MutedBrush}"
+                                  Data="M4,3 L11,3 11,10 4,10 Z M13,3 L20,3 20,10 13,10 Z M4,12 L11,12 11,21 4,21 Z M13,12 L20,12 20,21 13,21 Z" />
+                        </Viewbox>
+                        <TextBlock Text="Epic Games" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+            <TextBlock Grid.Row="2"
+                       Text="by xWillen"
+                       FontSize="11"
+                       Foreground="#6B7280"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,15" />
+        </Grid>
+
+        <Grid Grid.Column="1" Margin="25">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <DockPanel Grid.Row="0" LastChildFill="False">
+                <Button DockPanel.Dock="Right"
+                        Content="Add Account"
+                        Click="AddAccount_Click"
+                        Style="{StaticResource ActionButtonStyle}"
+                        VerticalAlignment="Center" />
+                <StackPanel>
+                    <TextBlock Text="Steam Accounts"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource TextWhite}" />
+                    <TextBlock Text="Manage and switch your local profiles"
+                               FontSize="13"
+                               Foreground="{StaticResource MutedBrush}"
+                               Margin="0,6,0,0" />
                 </StackPanel>
-                <TextBlock Grid.Row="2" Text="by xWillen" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="4,16,0,4" />
-            </Grid>
-        </Border>
-        <Grid Grid.Column="1" Margin="32,28,32,24">
-            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
-            <DockPanel Grid.Row="0" Margin="0,0,0,24" LastChildFill="True"><Button DockPanel.Dock="Right" Content="+ Add Account" Click="AddAccount_Click" Style="{StaticResource ActionButtonStyle}" /><StackPanel><TextBlock Text="Steam Accounts" FontSize="26" FontWeight="Bold" Foreground="White" /><TextBlock Text="Manage and switch between your saved accounts" FontSize="13" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0" /></StackPanel></DockPanel>
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <ItemsControl x:Name="AccountsList">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="18" Margin="0,0,0,12" Opacity="1">
-                                <Border.Triggers>
-                                    <EventTrigger RoutedEvent="FrameworkElement.Loaded"><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.25" /></Storyboard></BeginStoryboard></EventTrigger>
-                                </Border.Triggers>
-                                <DockPanel LastChildFill="True">
-                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0"><Button Content="Switch" Click="SwitchAccount_Click" Tag="{Binding}" Style="{StaticResource ActionButtonStyle}" Margin="0,0,8,0" /><Button Content="Delete" Click="DeleteAccount_Click" Tag="{Binding}" Style="{StaticResource DeleteButtonStyle}" /></StackPanel>
-                                    <StackPanel VerticalAlignment="Center"><DockPanel LastChildFill="True"><Border DockPanel.Dock="Right" Background="#27213F" CornerRadius="5" Padding="8,3" Margin="12,0,0,0"><TextBlock Text="{Binding Platform}" Foreground="#C4B5FD" FontSize="11" FontWeight="SemiBold" /></Border><TextBlock Text="{Binding Username}" Foreground="White" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" /></DockPanel>
-                                        <TextBox Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0" Foreground="#9CA3AF" FontSize="12" Margin="-4,5,0,0" Padding="4,2" TextWrapping="Wrap" AcceptsReturn="True" MinHeight="24" VerticalScrollBarVisibility="Disabled" />
-                                    </StackPanel>
-                                </DockPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+            </DockPanel>
+
+            <ListBox x:Name="AccountsList"
+                     Grid.Row="1"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     Margin="0,20,0,0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     ItemContainerStyle="{StaticResource AccountItemStyle}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{StaticResource PanelBrush}"
+                                CornerRadius="10"
+                                Padding="15"
+                                Margin="0,0,0,10"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Username}"
+                                               FontWeight="SemiBold"
+                                               FontSize="15"
+                                               Foreground="{StaticResource TextWhite}" />
+                                    <TextBox Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}"
+                                             Background="Transparent"
+                                             BorderThickness="0"
+                                             Foreground="{StaticResource MutedBrush}"
+                                             FontSize="12"
+                                             Padding="0"
+                                             Margin="0,5,0,0" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1"
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center"
+                                            Margin="16,0,0,0">
+                                    <Button Content="Switch"
+                                            Click="SwitchAccount_Click"
+                                            Tag="{Binding}"
+                                            Style="{StaticResource CardActionButtonStyle}"
+                                            Margin="0,0,8,0" />
+                                    <Button Content="Delete"
+                                            Click="DeleteAccount_Click"
+                                            Tag="{Binding}"
+                                            Style="{StaticResource DeleteButtonStyle}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
         </Grid>
     </Grid>
 </Window>
