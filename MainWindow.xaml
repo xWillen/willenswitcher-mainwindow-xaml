@@ -28,25 +28,17 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="ButtonBorder"
-                                Background="{TemplateBinding Background}"
-                                CornerRadius="8"
-                                Padding="{TemplateBinding Padding}">
+                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
                             <ContentPresenter VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="#232733" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.75" />
-                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ButtonBorder" Property="Background" Value="#232733" /></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="ButtonBorder" Property="Opacity" Value="0.75" /></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-
         <Style x:Key="ActionButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource TextWhite}" />
             <Setter Property="Background" Value="{StaticResource AccentBrush}" />
@@ -57,43 +49,31 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="ButtonBorder"
-                                Background="{TemplateBinding Background}"
-                                CornerRadius="7"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center" />
+                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" CornerRadius="7" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.88" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.72" />
-                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ButtonBorder" Property="Opacity" Value="0.88" /></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="ButtonBorder" Property="Opacity" Value="0.72" /></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-
         <Style x:Key="CardActionButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
             <Setter Property="Padding" Value="12,7" />
             <Setter Property="FontSize" Value="12" />
         </Style>
-
         <Style x:Key="NoteSaveButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
             <Setter Property="Padding" Value="12,7" />
             <Setter Property="FontSize" Value="12" />
             <Setter Property="MinWidth" Value="88" />
             <Setter Property="Background" Value="{StaticResource AccentBrush}" />
         </Style>
-
         <Style x:Key="DeleteButtonStyle" TargetType="Button" BasedOn="{StaticResource CardActionButtonStyle}">
             <Setter Property="Background" Value="#392027" />
             <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
         </Style>
-
         <Style x:Key="NoteTextBoxStyle" TargetType="TextBox">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
@@ -111,9 +91,7 @@
             <Setter Property="Cursor" Value="IBeam" />
             <Setter Property="ToolTip" Value="Edit account note" />
             <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="BorderBrush" Value="{StaticResource NoteBorderBrush}" />
-                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True"><Setter Property="BorderBrush" Value="{StaticResource NoteBorderBrush}" /></Trigger>
                 <Trigger Property="IsKeyboardFocusWithin" Value="True">
                     <Setter Property="Foreground" Value="{StaticResource TextWhite}" />
                     <Setter Property="BorderBrush" Value="{StaticResource NoteFocusBorderBrush}" />
@@ -121,180 +99,61 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-
         <Style x:Key="AccountItemStyle" TargetType="ListBoxItem">
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Margin" Value="0" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ListBoxItem">
-                        <ContentPresenter />
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
+            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><ContentPresenter /></ControlTemplate></Setter.Value></Setter>
         </Style>
     </Window.Resources>
 
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="220" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-
+        <Grid.ColumnDefinitions><ColumnDefinition Width="220" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
         <Grid Grid.Column="0" Background="{StaticResource PanelBrush}">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
+            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
             <StackPanel Grid.Row="0" Margin="22,24,18,0">
-                <TextBlock Text="Willen Switcher"
-                           FontSize="16"
-                           FontWeight="Bold"
-                           Foreground="{StaticResource TextWhite}" />
-                <TextBlock Text="Account Manager"
-                           FontSize="12"
-                           Foreground="{StaticResource MutedBrush}"
-                           Margin="0,5,0,0" />
+                <TextBlock Text="Willen Switcher" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextWhite}" />
+                <TextBlock Text="Account Manager" FontSize="12" Foreground="{StaticResource MutedBrush}" Margin="0,5,0,0" />
             </StackPanel>
             <StackPanel Grid.Row="1" Margin="12,38,12,0">
-                <Button Tag="Steam"
-                        Click="PlatformNav_Click"
-                        Style="{StaticResource NavButtonStyle}">
-                    <StackPanel Orientation="Horizontal">
-                        <Image Source="/Assets/steam.png"
-                               Width="18"
-                               Height="18"
-                               Margin="0,0,12,0"
-                               Stretch="Uniform"
-                               RenderOptions.BitmapScalingMode="HighQuality" />
-                        <TextBlock Text="Steam" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
-                <Button Tag="Riot"
-                        Click="PlatformNav_Click"
-                        Style="{StaticResource NavButtonStyle}">
-                    <StackPanel Orientation="Horizontal">
-                        <Image Source="/Assets/riot.png"
-                               Width="18"
-                               Height="18"
-                               Margin="0,0,12,0"
-                               Stretch="Uniform"
-                               RenderOptions.BitmapScalingMode="HighQuality" />
-                        <TextBlock Text="Riot Games" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
-                <Button Tag="Epic"
-                        Click="PlatformNav_Click"
-                        Style="{StaticResource NavButtonStyle}">
-                    <StackPanel Orientation="Horizontal">
-                        <Image Source="/Assets/epic.png"
-                               Width="18"
-                               Height="18"
-                               Margin="0,0,12,0"
-                               Stretch="Uniform"
-                               RenderOptions.BitmapScalingMode="HighQuality" />
-                        <TextBlock Text="Epic Games" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
+                <Button Tag="Steam" Click="PlatformNav_Click" Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal"><Image Source="/Assets/steam.png" Width="18" Height="18" Margin="0,0,12,0" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" /><TextBlock Text="Steam" VerticalAlignment="Center" /></StackPanel></Button>
+                <Button Tag="Riot" Click="PlatformNav_Click" Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal"><Image Source="/Assets/riot.png" Width="18" Height="18" Margin="0,0,12,0" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" /><TextBlock Text="Riot Games" VerticalAlignment="Center" /></StackPanel></Button>
+                <Button Tag="Epic" Click="PlatformNav_Click" Style="{StaticResource NavButtonStyle}"><StackPanel Orientation="Horizontal"><Image Source="/Assets/epic.png" Width="18" Height="18" Margin="0,0,12,0" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" /><TextBlock Text="Epic Games" VerticalAlignment="Center" /></StackPanel></Button>
             </StackPanel>
-            <TextBlock Grid.Row="2"
-                       Text="by xWillen"
-                       FontSize="11"
-                       Foreground="#6B7280"
-                       HorizontalAlignment="Center"
-                       Margin="0,0,0,15" />
+            <TextBlock Grid.Row="2" Text="by xWillen" FontSize="11" Foreground="#6B7280" HorizontalAlignment="Center" Margin="0,0,0,15" />
         </Grid>
-
         <Grid Grid.Column="1" Margin="25">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
             <DockPanel Grid.Row="0" LastChildFill="False">
-                <StackPanel DockPanel.Dock="Right"
-                            Orientation="Horizontal"
-                            VerticalAlignment="Center">
-                    <Button Content="Login New Account"
-                            Click="LoginNewAccount_Click"
-                            Style="{StaticResource CardActionButtonStyle}"
-                            Margin="0,0,10,0"
-                            VerticalAlignment="Center" />
-                    <Button Content="Add Account"
-                            Click="AddAccount_Click"
-                            Style="{StaticResource ActionButtonStyle}"
-                            VerticalAlignment="Center" />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="Login New Account" Click="LoginNewAccount_Click" Style="{StaticResource CardActionButtonStyle}" Margin="0,0,10,0" VerticalAlignment="Center" />
+                    <Button Content="Add Account" Click="AddAccount_Click" Style="{StaticResource ActionButtonStyle}" VerticalAlignment="Center" />
                 </StackPanel>
                 <StackPanel>
-                    <TextBlock x:Name="PlatformTitleText"
-                               Text="Steam Accounts"
-                               FontSize="24"
-                               FontWeight="Bold"
-                               Foreground="{StaticResource TextWhite}" />
-                    <TextBlock Text="Manage and switch your local profiles"
-                               FontSize="13"
-                               Foreground="{StaticResource MutedBrush}"
-                               Margin="0,6,0,0" />
+                    <TextBlock x:Name="PlatformTitleText" Text="Steam Accounts" FontSize="24" FontWeight="Bold" Foreground="{StaticResource TextWhite}" />
+                    <TextBlock Text="Manage and switch your local profiles" FontSize="13" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0" />
                 </StackPanel>
             </DockPanel>
-
-            <ListBox x:Name="AccountsList"
-                     Grid.Row="1"
-                     Background="Transparent"
-                     BorderThickness="0"
-                     Margin="0,20,0,0"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                     ItemContainerStyle="{StaticResource AccountItemStyle}">
+            <ListBox x:Name="AccountsList" Grid.Row="1" Background="Transparent" BorderThickness="0" Margin="0,20,0,0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemContainerStyle="{StaticResource AccountItemStyle}">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Border Background="{StaticResource PanelBrush}"
-                                CornerRadius="10"
-                                Padding="15"
-                                Margin="0,0,0,10"
-                                BorderBrush="{StaticResource BorderBrush}"
-                                BorderThickness="1">
+                        <Border Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="15" Margin="0,0,0,10" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
                             <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Username}"
-                                               FontWeight="SemiBold"
-                                               FontSize="15"
-                                               Foreground="{StaticResource TextWhite}" />
-                                    <TextBox Text="{Binding Note, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             Style="{StaticResource NoteTextBoxStyle}" />
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Width="40" Height="40" CornerRadius="7" Background="#232733" Margin="0,0,12,0" VerticalAlignment="Center" ClipToBounds="True" BorderBrush="#303544" BorderThickness="1">
+                                    <Image Source="{Binding AvatarSource}" Stretch="UniformToFill" />
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Username}" FontWeight="SemiBold" FontSize="15" Foreground="{StaticResource TextWhite}" />
+                                    <TextBox Text="{Binding Note, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource NoteTextBoxStyle}" />
                                 </StackPanel>
-                                <Grid Grid.Column="1"
-                                      VerticalAlignment="Center"
-                                      Margin="16,0,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <Button Grid.Column="0"
-                                            Content="Delete"
-                                            Click="DeleteAccount_Click"
-                                            Tag="{Binding}"
-                                            Style="{StaticResource DeleteButtonStyle}"
-                                            Margin="0,0,8,0" />
-                                    <Button Grid.Column="1"
-                                            Content="Switch"
-                                            Click="SwitchAccount_Click"
-                                            Tag="{Binding}"
-                                            Style="{StaticResource CardActionButtonStyle}"
-                                            Margin="0,0,8,0" />
-                                    <Button Grid.Column="2"
-                                            Content="Save Note"
-                                            Click="SaveNote_Click"
-                                            Tag="{Binding}"
-                                            Style="{StaticResource NoteSaveButtonStyle}"
-                                            ToolTip="Save account note" />
+                                <Grid Grid.Column="2" VerticalAlignment="Center" Margin="16,0,0,0">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <Button Grid.Column="0" Content="Delete" Click="DeleteAccount_Click" Tag="{Binding}" Style="{StaticResource DeleteButtonStyle}" Margin="0,0,8,0" />
+                                    <Button Grid.Column="1" Content="Switch" Click="SwitchAccount_Click" Tag="{Binding}" Style="{StaticResource CardActionButtonStyle}" Margin="0,0,8,0" />
+                                    <Button Grid.Column="2" Content="Save Note" Click="SaveNote_Click" Tag="{Binding}" Style="{StaticResource NoteSaveButtonStyle}" ToolTip="Save account note" />
                                 </Grid>
                             </Grid>
                         </Border>
