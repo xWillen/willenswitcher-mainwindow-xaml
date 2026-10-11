@@ -1,0 +1,126 @@
+<Window x:Class="WillenSwitcher.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:WillenSwitcher"
+        Title="W11len Switcher"
+        Width="1100"
+        Height="720"
+        MinWidth="850"
+        MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        Background="#0F1117"
+        Foreground="#F4F6FA">
+    <Window.Resources>
+        <SolidColorBrush x:Key="PanelBrush" Color="#171A23" />
+        <SolidColorBrush x:Key="MutedBrush" Color="#9299AA" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#7C5CFC" />
+        <Style x:Key="NavButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="#D8DBE5" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="14,11" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#242837" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ActionButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="14,9" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="7" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Column="0" Background="#12151D" BorderBrush="#242833" BorderThickness="0,0,1,0" Padding="20">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0" Margin="0,4,0,30">
+                    <TextBlock Text="W11len Switcher" FontSize="20" FontWeight="Bold" Foreground="White" />
+                    <TextBlock Text="ACCOUNT MANAGER" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}" Margin="0,7,0,0" />
+                </StackPanel>
+                <StackPanel Grid.Row="1">
+                    <TextBlock Text="PLATFORMS" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}" Margin="4,0,0,10" />
+                    <Button Content="Steam" Style="{StaticResource NavButtonStyle}" />
+                    <Button Content="Riot Games" Style="{StaticResource NavButtonStyle}" />
+                    <Button Content="Epic Games" Style="{StaticResource NavButtonStyle}" />
+                </StackPanel>
+                <TextBlock Grid.Row="2" Text="by xWillen" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="4,16,0,4" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Column="1" Margin="32,28,32,24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <DockPanel Grid.Row="0" Margin="0,0,0,24" LastChildFill="True">
+                <Button DockPanel.Dock="Right" Content="+ Add Account" Click="AddAccount_Click" Style="{StaticResource ActionButtonStyle}" />
+                <StackPanel>
+                    <TextBlock Text="Steam Accounts" FontSize="26" FontWeight="Bold" Foreground="White" />
+                    <TextBlock Text="Manage and switch between your saved accounts" FontSize="13" Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0" />
+                </StackPanel>
+            </DockPanel>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl x:Name="AccountsList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{StaticResource PanelBrush}" BorderBrush="#252A36" BorderThickness="1" CornerRadius="10" Padding="18" Margin="0,0,0,12">
+                                <DockPanel LastChildFill="True">
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                                        <Button Content="Switch" Click="SwitchAccount_Click" Tag="{Binding}" Style="{StaticResource ActionButtonStyle}" Margin="0,0,8,0" />
+                                        <Button Content="Delete" Click="DeleteAccount_Click" Tag="{Binding}" Foreground="#FF7B83" Background="#2A1D24" BorderThickness="0" Padding="12,9" Cursor="Hand" />
+                                    </StackPanel>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <DockPanel LastChildFill="True">
+                                            <Border DockPanel.Dock="Right" Background="#25213B" CornerRadius="5" Padding="8,3" Margin="12,0,0,0">
+                                                <TextBlock Text="{Binding Platform}" Foreground="#B9A9FF" FontSize="11" FontWeight="SemiBold" />
+                                            </Border>
+                                            <TextBlock Text="{Binding Username}" Foreground="White" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                        <TextBlock Text="{Binding Note}" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,7,0,0" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Window>
