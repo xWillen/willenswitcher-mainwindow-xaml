@@ -242,7 +242,7 @@
                                                FontWeight="SemiBold"
                                                FontSize="15"
                                                Foreground="{StaticResource TextWhite}" />
-                                    <TextBox Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox Text="{Binding Note, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                              Style="{StaticResource NoteTextBoxStyle}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1"
