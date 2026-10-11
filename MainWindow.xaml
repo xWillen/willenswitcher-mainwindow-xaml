@@ -85,7 +85,7 @@
         <Style x:Key="NoteSaveButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
             <Setter Property="Padding" Value="12,6" />
             <Setter Property="FontSize" Value="12" />
-            <Setter Property="Margin" Value="10,3,0,0" />
+            <Setter Property="Margin" Value="8,3,0,0" />
             <Setter Property="MinWidth" Value="58" />
             <Setter Property="Background" Value="{StaticResource AccentBrush}" />
         </Style>
@@ -106,6 +106,8 @@
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="AcceptsReturn" Value="True" />
             <Setter Property="MinHeight" Value="28" />
+            <Setter Property="MaxWidth" Value="240" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
             <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
             <Setter Property="Cursor" Value="IBeam" />
             <Setter Property="ToolTip" Value="Edit account note" />
