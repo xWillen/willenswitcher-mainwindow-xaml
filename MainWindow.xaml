@@ -25,6 +25,24 @@
             <Setter Property="Padding" Value="12,10" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}"
+                                CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#232733" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.75" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="ActionButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource TextWhite}" />
@@ -33,6 +51,24 @@
             <Setter Property="Padding" Value="14,9" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}"
+                                CornerRadius="7" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.88" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.72" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="CardActionButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
             <Setter Property="Padding" Value="12,7" />
@@ -42,6 +78,7 @@
             <Setter Property="Padding" Value="12,7" />
             <Setter Property="FontSize" Value="12" />
             <Setter Property="MinWidth" Value="88" />
+            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
         </Style>
         <Style x:Key="DeleteButtonStyle" TargetType="Button" BasedOn="{StaticResource CardActionButtonStyle}">
             <Setter Property="Background" Value="#392027" />
@@ -51,6 +88,7 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
             <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Padding" Value="7,5" />
             <Setter Property="Margin" Value="-7,3,0,0" />
             <Setter Property="FontSize" Value="12" />
@@ -59,7 +97,19 @@
             <Setter Property="MinHeight" Value="28" />
             <Setter Property="MaxWidth" Value="240" />
             <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="Cursor" Value="IBeam" />
             <Setter Property="ToolTip" Value="Edit account note" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="BorderBrush" Value="{StaticResource NoteBorderBrush}" />
+                </Trigger>
+                <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource TextWhite}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource NoteFocusBorderBrush}" />
+                    <Setter Property="Background" Value="#191D28" />
+                </Trigger>
+            </Style.Triggers>
         </Style>
         <Style x:Key="AccountItemStyle" TargetType="ListBoxItem">
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -92,25 +142,28 @@
             <StackPanel Grid.Row="0" Margin="22,24,18,0">
                 <TextBlock Text="Willen Switcher" FontSize="16" FontWeight="Bold"
                            Foreground="{StaticResource TextWhite}" />
-                <TextBlock Text="Account Manager" FontSize="12"
-                           Foreground="{StaticResource MutedBrush}" Margin="0,5,0,0" />
+                <TextBlock Text="Account Manager" FontSize="12" Foreground="{StaticResource MutedBrush}"
+                           Margin="0,5,0,0" />
             </StackPanel>
             <StackPanel Grid.Row="1" Margin="12,38,12,0">
                 <Button Tag="Steam" Click="PlatformNav_Click" Style="{StaticResource NavButtonStyle}">
                     <StackPanel Orientation="Horizontal">
-                        <Image Source="/Assets/steam.png" Width="18" Height="18" Margin="0,0,12,0" />
+                        <Image Source="/Assets/steam.png" Width="18" Height="18" Margin="0,0,12,0"
+                               Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
                         <TextBlock Text="Steam" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
                 <Button Tag="Riot" Click="PlatformNav_Click" Style="{StaticResource NavButtonStyle}">
                     <StackPanel Orientation="Horizontal">
-                        <Image Source="/Assets/riot.png" Width="18" Height="18" Margin="0,0,12,0" />
+                        <Image Source="/Assets/riot.png" Width="18" Height="18" Margin="0,0,12,0"
+                               Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
                         <TextBlock Text="Riot Games" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
                 <Button Tag="Epic" Click="PlatformNav_Click" Style="{StaticResource NavButtonStyle}">
                     <StackPanel Orientation="Horizontal">
-                        <Image Source="/Assets/epic.png" Width="18" Height="18" Margin="0,0,12,0" />
+                        <Image Source="/Assets/epic.png" Width="18" Height="18" Margin="0,0,12,0"
+                               Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
                         <TextBlock Text="Epic Games" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
@@ -152,7 +205,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <Border Grid.Column="0" Width="40" Height="40" CornerRadius="7"
+                                <Border Grid.Column="0" Width="40" Height="40" CornerRadius="6"
                                         Background="#232733" Margin="0,0,12,0" VerticalAlignment="Center"
                                         ClipToBounds="True" BorderBrush="#303544" BorderThickness="1">
                                     <Image Source="{Binding AvatarSource}" Stretch="UniformToFill" />
