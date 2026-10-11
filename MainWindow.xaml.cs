@@ -98,30 +98,73 @@ public partial class MainWindow : Window
         {
             string data = GetRiotDataPath();
             foreach (string file in new[] { "RiotClientPrivateSettings.yaml", "RiotGamesPrivateSettings.yaml" })
-                if (File.Exists(Path.Combine(data, file))) { string? found = MatchNamedValue(File.ReadAllText(Path.Combine(data, file)), @"(?im)^\s*(?:game_name|riot_id|display_name|displayName|username|name)\s*:\s*[""']?([^\r\n""']+)"); if (Plausible(found)) return found!.Trim(); }
+                if (File.Exists(Path.Combine(data, file))) { string? found = MatchNamedValue(ReadFileShared(Path.Combine(data, file)), @"(?im)^\s*(?:game_name|riot_id|display_name|displayName|username|name)\s*:\s*[""']?([^\r\n""']+)"); if (Plausible(found)) return found!.Trim(); }
             string logs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Riot Games", "Riot Client", "Logs");
-            if (Directory.Exists(logs)) foreach (string p in Directory.GetFiles(logs, "*.log", SearchOption.AllDirectories).OrderByDescending(File.GetLastWriteTimeUtc).Take(20)) { string? found = MatchNamedValue(File.ReadAllText(p), @"(?im)(?:riot\s*id|game_name|logged\s+in\s+as|account\s+name)\s*[:=]\s*[""']?([^\r\n""']{2,64})"); if (Plausible(found)) return found!.Trim(); }
+            if (Directory.Exists(logs)) foreach (string p in Directory.GetFiles(logs, "*.log", SearchOption.AllDirectories).OrderByDescending(File.GetLastWriteTimeUtc).Take(20)) { string? found = MatchNamedValue(ReadFileShared(p), @"(?im)(?:riot\s*id|game_name|logged\s+in\s+as|account\s+name)\s*[:=]\s*[""']?([^\r\n""']{2,64})"); if (Plausible(found)) return found!.Trim(); }
         }
         catch { }
         return "";
     }
     private string GetEpicAccountName()
     {
+        string saved = GetEpicSavedPath();
+        foreach (string ini in new[] { Path.Combine(saved, "Config", "Windows", "GameUserSettings.ini"), Path.Combine(saved, "Config", "Windows", "GameUserSettings.ini") })
+        {
+            if (!File.Exists(ini)) continue;
+            foreach (string key in new[] { "DisplayName", "LastLoginUserName", "AccountName" })
+            {
+                string? value = ReadIniValue(ini, key);
+                if (Plausible(value)) return value!.Trim();
+            }
+        }
         try
         {
-            string ini = Path.Combine(GetEpicSavedPath(), "Config", "Windows", "GameUserSettings.ini");
-            if (File.Exists(ini)) foreach (string key in new[] { "DisplayName", "LastLoginUserName", "AccountName" }) { string? v = ReadIniValue(ini, key); if (Plausible(v)) return v!.Trim(); }
             using var reg = Registry.CurrentUser.OpenSubKey(@"Software\Epic Games\EpicGamesLauncher");
-            foreach (string k in new[] { "DisplayName", "LastLoginUserName", "AccountName" }) { string? v = reg?.GetValue(k)?.ToString(); if (Plausible(v)) return v!.Trim(); }
-            string logs = Path.Combine(GetEpicSavedPath(), "Logs");
-            if (Directory.Exists(logs)) foreach (string p in Directory.GetFiles(logs, "*.log").OrderByDescending(File.GetLastWriteTimeUtc).Take(10)) { string? v = MatchNamedValue(File.ReadAllText(p), @"(?im)(?:logging\s+in\s+user|display\s*name|user)\s*[:=]\s*[""']?([^\r\n""']{2,64})"); if (Plausible(v)) return v!.Trim(); }
+            foreach (string key in new[] { "DisplayName", "LastLoginUserName", "AccountName" })
+            {
+                string? value = reg?.GetValue(key)?.ToString();
+                if (Plausible(value)) return value!.Trim();
+            }
         }
         catch { }
+
+        // Launcher logs are actively written while Epic is open; share read access with its writer.
+        string logs = Path.Combine(saved, "Logs");
+        try
+        {
+            if (Directory.Exists(logs))
+            {
+                foreach (string path in Directory.GetFiles(logs, "*.log").OrderByDescending(SafeLastWriteTimeUtc).Take(20))
+                {
+                    string text;
+                    try { text = ReadFileShared(path); }
+                    catch (IOException) { continue; }
+                    catch (UnauthorizedAccessException) { continue; }
+                    foreach (string pattern in new[] {
+                        @"(?im)User\s+(?<id>[0-9a-f]{32})\s*\((?<name>[^)\r\n]{2,64})\)\s*signed\s*in",
+                        @"(?im)(?:logging\s+in\s+user|display\s*name|user)\s*[:=]\s*[""']?(?<name>[^\r\n""']{2,64})"
+                    })
+                    {
+                        var match = Regex.Match(text, pattern);
+                        if (match.Success && Plausible(match.Groups["name"].Value)) return match.Groups["name"].Value.Trim();
+                    }
+                }
+            }
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
         return "";
     }
+    private static string ReadFileShared(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
+    }
+    private static DateTime SafeLastWriteTimeUtc(string path) { try { return File.GetLastWriteTimeUtc(path); } catch { return DateTime.MinValue; } }
     private static bool Plausible(string? value) => !string.IsNullOrWhiteSpace(value) && value.Trim().Length <= 64 && !value.Contains("token", StringComparison.OrdinalIgnoreCase) && !value.Contains("puuid", StringComparison.OrdinalIgnoreCase);
     private static string? MatchNamedValue(string text, string pattern) { var m = Regex.Match(text, pattern); return m.Success ? m.Groups[1].Value.Trim().Trim('"', '\'') : null; }
-    private static string? ReadIniValue(string path, string key) { foreach (string line in File.ReadLines(path)) { string t = line.Trim(); int i = t.IndexOf('='); if (i > 0 && t[..i].Trim().Equals(key, StringComparison.OrdinalIgnoreCase)) return t[(i + 1)..].Trim().Trim('"'); } return null; }
+    private static string? ReadIniValue(string path, string key) { try { foreach (string line in ReadFileShared(path).Split(new[] { "\r\n", "\n" }, StringSplitOptions.None)) { string t = line.Trim(); int i = t.IndexOf('='); if (i > 0 && t[..i].Trim().Equals(key, StringComparison.OrdinalIgnoreCase)) return t[(i + 1)..].Trim().Trim('"'); } } catch (IOException) { } catch (UnauthorizedAccessException) { } return null; }
 
     private bool IsAlreadyAdded(string platform, string username) => AllAccounts.Any(a => a.Platform.Equals(platform, StringComparison.OrdinalIgnoreCase) && a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
     private void AddAccount_Click(object sender, RoutedEventArgs e)
