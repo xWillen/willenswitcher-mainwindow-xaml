@@ -281,13 +281,13 @@ public partial class MainWindow : Window
     private void StartRiotClient()
     {
         string[] candidates = { Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Riot Games", "Riot Client", "RiotClientServices.exe"), Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Riot Games", "Riot Client", "RiotClientServices.exe"), @"C:\Riot Games\Riot Client\RiotClientServices.exe" };
-        string executable = candidates.FirstOrDefault(File.Exists); Process.Start(new ProcessStartInfo(executable ?? "riotclient://") { UseShellExecute = true });
+        string? executable = candidates.FirstOrDefault(File.Exists); Process.Start(new ProcessStartInfo(executable ?? "riotclient://") { UseShellExecute = true });
     }
 
     private void StartEpicLauncher()
     {
         string[] candidates = { Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Epic Games", "Launcher", "Portal", "Binaries", "Win64", "EpicGamesLauncher.exe"), Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Epic Games", "Launcher", "Portal", "Binaries", "Win64", "EpicGamesLauncher.exe") };
-        string executable = candidates.FirstOrDefault(File.Exists); Process.Start(new ProcessStartInfo(executable ?? "com.epicgames.launcher://") { UseShellExecute = true });
+        string? executable = candidates.FirstOrDefault(File.Exists); Process.Start(new ProcessStartInfo(executable ?? "com.epicgames.launcher://") { UseShellExecute = true });
     }
 
     private void SaveNote_Click(object sender, RoutedEventArgs e) { SaveAccountsToJson(); MessageBox.Show("Note saved successfully!", "Willen Switcher", MessageBoxButton.OK, MessageBoxImage.Information); }
