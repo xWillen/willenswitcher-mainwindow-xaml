@@ -103,9 +103,7 @@ public partial class MainWindow : Window
                 string steamId = block.Groups["id"].Value;
                 string cache = Path.Combine(steamPath, "config", "avatarcache");
                 string? imagePath = Directory.Exists(cache)
-                    ? Directory.GetFiles(cache, steamId + ".*", SearchOption.TopDirectoryOnly)
-                        .Where(p => new[] { ".png", ".jpg", ".jpeg", ".bmp", ".webp" }.Contains(Path.GetExtension(p), StringComparer.OrdinalIgnoreCase))
-                        .OrderByDescending(File.GetLastWriteTimeUtc).FirstOrDefault()
+                    ? Directory.GetFiles(cache, steamId + ".*", SearchOption.TopDirectoryOnly).Where(p => new[] { ".png", ".jpg", ".jpeg", ".bmp", ".webp" }.Contains(Path.GetExtension(p), StringComparer.OrdinalIgnoreCase)).OrderByDescending(File.GetLastWriteTimeUtc).FirstOrDefault()
                     : null;
                 if (!string.IsNullOrWhiteSpace(imagePath)) { account.AvatarPath = imagePath; return; }
                 string? url = ReadVdfValue(body, "AvatarUrl");
@@ -127,22 +125,20 @@ public partial class MainWindow : Window
         try
         {
             string dataPath = GetRiotDataPath();
-            foreach (string file in new[] { "RiotGamesPrivateSettings.yaml", "RiotClientPrivateSettings.yaml" })
+            foreach (string filename in new[] { "RiotClientPrivateSettings.yaml", "RiotGamesPrivateSettings.yaml" })
             {
-                string path = Path.Combine(dataPath, file);
+                string path = Path.Combine(dataPath, filename);
                 if (!File.Exists(path)) continue;
                 string text = File.ReadAllText(path);
-                string? value = MatchNamedValue(text, @"(?im)^\s*(?:username|display_name|displayName|name)\s*:\s*[""']?([^\r\n""']+)");
-                if (!string.IsNullOrWhiteSpace(value)) return value;
-                value = MatchNamedValue(text, @"(?im)^\s*sub\s*:\s*[""']?([^\r\n""']+)");
-                if (!string.IsNullOrWhiteSpace(value) && value.Contains('@')) return value;
+                string? name = MatchNamedValue(text, @"(?im)^\s*(?:display_name|displayName|username|name)\s*:\s*[""']?([^\r\n""']+)");
+                if (!string.IsNullOrWhiteSpace(name)) return name;
             }
             string logs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Riot Games", "Riot Client", "Logs");
             if (Directory.Exists(logs))
                 foreach (string path in Directory.GetFiles(logs, "Riot Client.log", SearchOption.AllDirectories).OrderByDescending(File.GetLastWriteTimeUtc).Take(3))
                 {
-                    string? value = MatchNamedValue(File.ReadAllText(path), @"(?im)(?:logged\s+in\s+as|account)\s*[:=]?\s*([\w.@-]+)");
-                    if (!string.IsNullOrWhiteSpace(value)) return value;
+                    string? name = MatchNamedValue(File.ReadAllText(path), @"(?im)(?:logged\s+in\s+as|account)\s*[:=]?\s*([\w.@-]+)");
+                    if (!string.IsNullOrWhiteSpace(name)) return name;
                 }
         }
         catch { }
@@ -162,11 +158,14 @@ public partial class MainWindow : Window
             string configPath = Path.Combine(GetEpicSavedPath(), "Config", "Windows", "GameUserSettings.ini");
             if (File.Exists(configPath))
             {
-                string? value = ReadIniValue(configPath, "LastLoginUserName") ?? ReadIniValue(configPath, "DisplayName");
-                if (!string.IsNullOrWhiteSpace(value)) return value;
+                foreach (string keyName in new[] { "DisplayName", "LastLoginUserName", "AccountName" })
+                {
+                    string? value = ReadIniValue(configPath, keyName);
+                    if (!string.IsNullOrWhiteSpace(value) && !value.Equals("未登录", StringComparison.OrdinalIgnoreCase)) return value;
+                }
             }
             using var key = Registry.CurrentUser.OpenSubKey(@"Software\Epic Games\EpicGamesLauncher");
-            foreach (string name in new[] { "LastLoginUserName", "DisplayName", "AccountName" })
+            foreach (string name in new[] { "DisplayName", "LastLoginUserName", "AccountName" })
             {
                 string? value = key?.GetValue(name)?.ToString();
                 if (!string.IsNullOrWhiteSpace(value)) return value;
@@ -202,11 +201,25 @@ public partial class MainWindow : Window
     {
         try
         {
-            if (_currentPlatform == "Steam") { KillProcesses("steam"); using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam", true)) key?.SetValue("AutoLoginUser", ""); Process.Start(new ProcessStartInfo("steam://open/main") { UseShellExecute = true }); }
-            else if (_currentPlatform == "Riot") { KillProcesses("RiotClientServices", "RiotClientUx", "RiotClientUxRender", "VALORANT", "LeagueClient", "LeagueClientUx"); string activeSettings = FindRiotSettingsFile(); if (!string.IsNullOrEmpty(activeSettings)) File.Move(activeSettings, activeSettings + ".willenswitcher-backup", true); StartRiotClient(); }
-            else if (_currentPlatform == "Epic") { KillProcesses("EpicGamesLauncher"); StartEpicLauncher(); }
+            if (_currentPlatform == "Steam")
+            {
+                KillProcesses("steam");
+                using var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam", true);
+                key?.SetValue("AutoLoginUser", "");
+                Process.Start(new ProcessStartInfo("steam://open/main") { UseShellExecute = true });
+            }
+            else if (_currentPlatform == "Riot")
+            {
+                KillProcesses("RiotClientServices", "RiotClientUx", "RiotClientUxRender", "VALORANT", "LeagueClient", "LeagueClientUx");
+                StartRiotClient();
+            }
+            else if (_currentPlatform == "Epic")
+            {
+                KillProcesses("EpicGamesLauncher", "EpicWebHelper");
+                StartEpicLauncher();
+            }
         }
-        catch (Exception ex) { MessageBox.Show("Could not start the login flow: " + ex.Message, "Login Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch { }
     }
 
     private void DeleteAccount_Click(object sender, RoutedEventArgs e)
@@ -226,25 +239,48 @@ public partial class MainWindow : Window
 
     private void KillProcesses(params string[] processNames)
     {
-        foreach (string processName in processNames) foreach (var process in Process.GetProcessesByName(processName))
-        { try { process.Kill(); process.WaitForExit(3000); } catch { } finally { process.Dispose(); } }
+        foreach (string processName in processNames)
+            foreach (var process in Process.GetProcessesByName(processName))
+            {
+                try { process.Kill(); process.WaitForExit(3000); }
+                catch { }
+                finally { process.Dispose(); }
+            }
     }
 
     private void SwitchSteamAccount(string username)
     {
-        try { KillProcesses("steam"); using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam", true)) { if (key != null) { key.SetValue("AutoLoginUser", username); key.SetValue("RememberPassword", 1); } } Process.Start(new ProcessStartInfo("steam://open/main") { UseShellExecute = true }); }
+        try { KillProcesses("steam"); using var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam", true); if (key != null) { key.SetValue("AutoLoginUser", username); key.SetValue("RememberPassword", 1); } Process.Start(new ProcessStartInfo("steam://open/main") { UseShellExecute = true }); }
         catch (Exception ex) { MessageBox.Show("Error switching account: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 
     private void SwitchRiotAccount(Account account)
     {
-        try { SaveSessionSnapshot(account); KillProcesses("RiotClientServices", "RiotClientUx", "RiotClientUxRender", "VALORANT", "LeagueClient", "LeagueClientUx"); string backupPath = GetSessionPath("Riot", account.Username); string dataPath = GetRiotDataPath(); if (Directory.Exists(Path.Combine(backupPath, "Data"))) CopyDirectory(Path.Combine(backupPath, "Data"), dataPath); StartRiotClient(); }
+        try
+        {
+            SaveSessionSnapshot(account);
+            KillProcesses("RiotClientServices", "RiotClientUx", "RiotClientUxRender", "VALORANT", "LeagueClient", "LeagueClientUx");
+            string backupPath = GetSessionPath("Riot", account.Username);
+            string dataPath = GetRiotDataPath();
+            string savedData = Path.Combine(backupPath, "Data");
+            if (Directory.Exists(savedData)) CopyDirectory(savedData, dataPath);
+            StartRiotClient();
+        }
         catch (Exception ex) { MessageBox.Show("Could not switch Riot account: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 
     private void SwitchEpicAccount(Account account)
     {
-        try { SaveSessionSnapshot(account); KillProcesses("EpicGamesLauncher"); string backupPath = GetSessionPath("Epic", account.Username); string savedPath = GetEpicSavedPath(); if (Directory.Exists(Path.Combine(backupPath, "Saved"))) CopyDirectory(Path.Combine(backupPath, "Saved"), savedPath); StartEpicLauncher(); }
+        try
+        {
+            SaveSessionSnapshot(account);
+            KillProcesses("EpicGamesLauncher", "EpicWebHelper");
+            string backupPath = GetSessionPath("Epic", account.Username);
+            string savedPath = GetEpicSavedPath();
+            string savedSession = Path.Combine(backupPath, "Saved");
+            if (Directory.Exists(savedSession)) CopyDirectory(savedSession, savedPath);
+            StartEpicLauncher();
+        }
         catch (Exception ex) { MessageBox.Show("Could not switch Epic Games account: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 
@@ -264,13 +300,6 @@ public partial class MainWindow : Window
     private string GetRiotDataPath() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Riot Games", "Riot Client", "Data");
     private string GetEpicSavedPath() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "EpicGamesLauncher", "Saved");
 
-    private string FindRiotSettingsFile()
-    {
-        string dataPath = GetRiotDataPath();
-        foreach (string name in new[] { "RiotGamesPrivateSettings.yaml", "RiotClientPrivateSettings.yaml" }) { string candidate = Path.Combine(dataPath, name); if (File.Exists(candidate)) return candidate; }
-        return "";
-    }
-
     private static void CopyDirectory(string source, string destination)
     {
         Directory.CreateDirectory(destination);
@@ -281,13 +310,15 @@ public partial class MainWindow : Window
     private void StartRiotClient()
     {
         string[] candidates = { Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Riot Games", "Riot Client", "RiotClientServices.exe"), Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Riot Games", "Riot Client", "RiotClientServices.exe"), @"C:\Riot Games\Riot Client\RiotClientServices.exe" };
-        string? executable = candidates.FirstOrDefault(File.Exists); Process.Start(new ProcessStartInfo(executable ?? "riotclient://") { UseShellExecute = true });
+        string? executable = candidates.FirstOrDefault(File.Exists);
+        Process.Start(new ProcessStartInfo(executable ?? "riotclient://") { UseShellExecute = true });
     }
 
     private void StartEpicLauncher()
     {
         string[] candidates = { Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Epic Games", "Launcher", "Portal", "Binaries", "Win64", "EpicGamesLauncher.exe"), Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Epic Games", "Launcher", "Portal", "Binaries", "Win64", "EpicGamesLauncher.exe") };
-        string? executable = candidates.FirstOrDefault(File.Exists); Process.Start(new ProcessStartInfo(executable ?? "com.epicgames.launcher://") { UseShellExecute = true });
+        string? executable = candidates.FirstOrDefault(File.Exists);
+        Process.Start(new ProcessStartInfo(executable ?? "com.epicgames.launcher://") { UseShellExecute = true });
     }
 
     private void SaveNote_Click(object sender, RoutedEventArgs e) { SaveAccountsToJson(); MessageBox.Show("Note saved successfully!", "Willen Switcher", MessageBoxButton.OK, MessageBoxImage.Information); }
