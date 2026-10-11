@@ -105,43 +105,47 @@ public partial class MainWindow : Window
         catch { }
         return "";
     }
+
+    // Launcher config files are not a supported source of the current Epic display name.
+    // Prefer the current launcher's recent sign-in log evidence; never infer an account
+    // from stale logs if a later logout/sign-in event is present.
     private string GetEpicAccountName()
     {
-        string ini = Path.Combine(GetEpicSavedPath(), "Config", "Windows", "GameUserSettings.ini");
-        try
-        {
-            if (File.Exists(ini))
-            {
-                string section = "";
-                foreach (string line in ReadFileShared(ini).Split(new[] { "\r\n", "\n" }, StringSplitOptions.None))
-                {
-                    string t = line.Trim();
-                    if (t.StartsWith("[") && t.EndsWith("]")) { section = t[1..^1]; continue; }
-                    int i = t.IndexOf('='); if (i < 1) continue;
-                    string key = t[..i].Trim(); string value = t[(i + 1)..].Trim().Trim('"', '\'');
-                    if (section.Equals("RememberMe", StringComparison.OrdinalIgnoreCase) && key.Equals("DisplayName", StringComparison.OrdinalIgnoreCase) && Plausible(value)) return value;
-                }
-            }
-        }
-        catch (IOException) { } catch (UnauthorizedAccessException) { }
         string logs = Path.Combine(GetEpicSavedPath(), "Logs");
         try
         {
             if (!Directory.Exists(logs)) return "";
-            var patterns = new[] { @"""DisplayName""\s*:\s*""(?<name>[^""]+)""", @"""epic\.account\.display_name""\s*:\s*""(?<name>[^""]+)""", @"DisplayName\s*:\s*'(?<name>[^']+)'", @"Logged in as:?\s*(?<name>[^\r\n,]+)", @"User\s+(?<id>[0-9a-f]{32})\s*\((?<name>[^)\r\n]{2,64})\)\s*signed\s*in" };
-            foreach (string path in Directory.GetFiles(logs, "*.log").OrderByDescending(SafeLastWriteTimeUtc).Take(20))
+            foreach (string path in Directory.GetFiles(logs, "*.log", SearchOption.TopDirectoryOnly)
+                         .OrderByDescending(SafeLastWriteTimeUtc).Take(30))
             {
-                string text; try { text = ReadFileShared(path); } catch (IOException) { continue; } catch (UnauthorizedAccessException) { continue; }
+                string text;
+                try { text = ReadFileShared(path); }
+                catch (IOException) { continue; }
+                catch (UnauthorizedAccessException) { continue; }
+
+                var patterns = new[]
+                {
+                    @"""(?:DisplayName|display_name|displayName)""\s*:\s*""(?<name>[^""]{1,64})""",
+                    @"(?:DisplayName|display_name|displayName|EpicAccountName)\s*[:=]\s*[""']?(?<name>[^\r\n,""']{1,64})",
+                    @"(?:logged\s+in\s+as|signed\s+in\s+as|user\s+name)\s*[:=]?\s*[""']?(?<name>[^\r\n,""']{1,64})",
+                    @"User\s+[0-9a-f]{32}\s*\((?<name>[^)\r\n]{1,64})\)\s*signed\s*in"
+                };
                 foreach (string pattern in patterns)
                 {
-                    var matches = Regex.Matches(text, pattern, RegexOptions.IgnoreCase);
-                    for (int i = matches.Count - 1; i >= 0; i--) { string name = matches[i].Groups["name"].Value.Trim(); if (Plausible(name)) return name; }
+                    var matches = Regex.Matches(text, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+                    for (int i = matches.Count - 1; i >= 0; i--)
+                    {
+                        string name = matches[i].Groups["name"].Value.Trim();
+                        if (Plausible(name) && !LooksLikeEpicIdentifier(name)) return name;
+                    }
                 }
             }
         }
-        catch (IOException) { } catch (UnauthorizedAccessException) { }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
         return "";
     }
+    private static bool LooksLikeEpicIdentifier(string value) => value.Length >= 32 && value.All(c => Uri.IsHexDigit(c) || c == '-');
     private static string ReadFileShared(string path)
     {
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
@@ -156,6 +160,15 @@ public partial class MainWindow : Window
     private void AddAccount_Click(object sender, RoutedEventArgs e)
     {
         string username = DetectAccountName(_currentPlatform);
+        if (string.IsNullOrWhiteSpace(username) && _currentPlatform.Equals("Epic", StringComparison.OrdinalIgnoreCase))
+        {
+            // Logs can be rotated or omit identity. Ask for the visible launcher display name
+            // rather than falsely claiming the user is signed out.
+            string? entered = Microsoft.VisualBasic.Interaction.InputBox(
+                "Epic's local launcher files do not reliably expose the signed-in display name. Enter the Epic display name shown in the launcher:",
+                "Epic Account Name", "").Trim();
+            if (!string.IsNullOrWhiteSpace(entered)) username = entered;
+        }
         if (string.IsNullOrWhiteSpace(username)) { MessageBox.Show("Please sign in to your " + _currentPlatform + " account first!", "Sign In Required", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (IsAlreadyAdded(_currentPlatform, username)) { MessageBox.Show("This account is already added!", "Notice", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         var account = new Account { Username = username, DisplayName = username, Platform = _currentPlatform, Note = "Main Account" }; if (_currentPlatform == "Steam") UpdateSteamAccountDetails(account);
