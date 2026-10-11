@@ -5,7 +5,6 @@
         MinWidth="800" MinHeight="500"
         WindowStartupLocation="CenterScreen" Background="#0F1117">
     <Window.Resources>
-        <!-- Shared palette -->
         <SolidColorBrush x:Key="PanelBrush" Color="#161922" />
         <SolidColorBrush x:Key="MutedBrush" Color="#9299AA" />
         <SolidColorBrush x:Key="AccentBrush" Color="#7C5CFC" />
@@ -13,7 +12,6 @@
         <SolidColorBrush x:Key="BorderBrush" Color="#232733" />
         <SolidColorBrush x:Key="DangerBrush" Color="#F87171" />
 
-        <!-- Reusable controls -->
         <Style x:Key="NavButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource TextWhite}" />
             <Setter Property="Background" Value="Transparent" />
@@ -146,10 +144,12 @@
                 </StackPanel>
             </Grid>
 
-            <!-- Account cards -->
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <ItemsControl x:Name="AccountsList" ItemTemplate="{StaticResource AccountCardTemplate}" />
-            </ScrollViewer>
+            <!-- Account cards; transparent ListBox keeps code-behind ItemsSource compatible -->
+            <ListBox x:Name="AccountsList" Grid.Row="1" Background="Transparent" BorderThickness="0"
+                     Padding="0" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     ItemContainerStyle="{StaticResource AccountListItemStyle}"
+                     ItemTemplate="{StaticResource AccountCardTemplate}" />
         </Grid>
     </Grid>
 </Window>
