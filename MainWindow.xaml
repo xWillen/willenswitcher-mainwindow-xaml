@@ -154,7 +154,7 @@
             <StackPanel Grid.Row="1" Margin="12,38,12,0">
                 <Button Style="{StaticResource NavButtonStyle}">
                     <StackPanel Orientation="Horizontal">
-                        <Image Source="pack://application:,,,/Assets/steam.png"
+                        <Image Source="/Assets/steam.png"
                                Width="18"
                                Height="18"
                                Margin="0,0,12,0"
@@ -165,7 +165,7 @@
                 </Button>
                 <Button Style="{StaticResource NavButtonStyle}">
                     <StackPanel Orientation="Horizontal">
-                        <Image Source="pack://application:,,,/Assets/riot.png"
+                        <Image Source="/Assets/riot.png"
                                Width="18"
                                Height="18"
                                Margin="0,0,12,0"
@@ -176,7 +176,7 @@
                 </Button>
                 <Button Style="{StaticResource NavButtonStyle}">
                     <StackPanel Orientation="Horizontal">
-                        <Image Source="pack://application:,,,/Assets/epic.png"
+                        <Image Source="/Assets/epic.png"
                                Width="18"
                                Height="18"
                                Margin="0,0,12,0"
