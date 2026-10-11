@@ -66,7 +66,7 @@ public partial class MainWindow : Window
 
         if (AllAccounts.Any(a => a.Username.Equals(username, StringComparison.OrdinalIgnoreCase) && a.Platform == _currentPlatform))
         {
-            MessageBox.Show("الحساب مضاف عندك من قبل يا ذيبان!", "تنبيه", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("This account is already added!", "Notice", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -101,7 +101,7 @@ public partial class MainWindow : Window
             }
             else
             {
-                MessageBox.Show("السويتش لـ " + acc.Platform + " بالطريق يا وحش!", "قريباً", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Switching for " + acc.Platform + " is coming soon!", "Coming Soon", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
     }
@@ -133,14 +133,14 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show("صار خطأ بالسويتش: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show("Error switching account: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
     private void SaveNote_Click(object sender, RoutedEventArgs e)
     {
         SaveAccountsToJson();
-        MessageBox.Show("تم حفظ الملاحظة بنجاح!", "Willen Switcher", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show("Note saved successfully!", "Willen Switcher", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void LoadAccountsFromJson()
