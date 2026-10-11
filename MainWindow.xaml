@@ -215,11 +215,19 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <DockPanel Grid.Row="0" LastChildFill="False">
-                <Button DockPanel.Dock="Right"
-                        Content="Add Account"
-                        Click="AddAccount_Click"
-                        Style="{StaticResource ActionButtonStyle}"
-                        VerticalAlignment="Center" />
+                <StackPanel DockPanel.Dock="Right"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <Button Content="Login New Account"
+                            Click="LoginNewAccount_Click"
+                            Style="{StaticResource CardActionButtonStyle}"
+                            Margin="0,0,10,0"
+                            VerticalAlignment="Center" />
+                    <Button Content="Add Account"
+                            Click="AddAccount_Click"
+                            Style="{StaticResource ActionButtonStyle}"
+                            VerticalAlignment="Center" />
+                </StackPanel>
                 <StackPanel>
                     <TextBlock x:Name="PlatformTitleText"
                                Text="Steam Accounts"
