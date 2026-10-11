@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -45,15 +46,13 @@ public partial class MainWindow : Window
     private void RefreshFilteredList()
     {
         FilteredAccounts.Clear();
-        foreach (var acc in AllAccounts.Where(a => a.Platform == _currentPlatform))
-            FilteredAccounts.Add(acc);
+        foreach (var acc in AllAccounts.Where(a => a.Platform == _currentPlatform)) FilteredAccounts.Add(acc);
     }
 
     private void DetectAndSaveActiveAccount(string platform)
     {
         string username = DetectAccountName(platform);
-        if (string.IsNullOrWhiteSpace(username) || IsAlreadyAdded(platform, username))
-            return;
+        if (string.IsNullOrWhiteSpace(username) || IsAlreadyAdded(platform, username)) return;
         var account = new Account { Username = username, Platform = platform, Note = "Main Account" };
         AllAccounts.Add(account);
         SaveSessionSnapshot(account);
@@ -71,11 +70,7 @@ public partial class MainWindow : Window
 
     private string GetSteamAccountName()
     {
-        try
-        {
-            using var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam");
-            return key?.GetValue("AutoLoginUser")?.ToString() ?? "";
-        }
+        try { using var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam"); return key?.GetValue("AutoLoginUser")?.ToString() ?? ""; }
         catch { return ""; }
     }
 
@@ -86,19 +81,21 @@ public partial class MainWindow : Window
             string dataPath = GetRiotDataPath();
             foreach (string file in new[] { "RiotGamesPrivateSettings.yaml", "RiotClientPrivateSettings.yaml" })
             {
-                string settingsPath = Path.Combine(dataPath, file);
-                if (!File.Exists(settingsPath)) continue;
-                foreach (string line in File.ReadLines(settingsPath))
+                string path = Path.Combine(dataPath, file);
+                if (!File.Exists(path)) continue;
+                string text = File.ReadAllText(path);
+                string? value = MatchNamedValue(text, @"(?im)^\s*(?:username|display_name|displayName|name)\s*:\s*[""']?([^\r\n""']+)");
+                if (!string.IsNullOrWhiteSpace(value)) return value;
+                value = MatchNamedValue(text, @"(?im)^\s*sub\s*:\s*[""']?([^\r\n""']+)");
+                if (!string.IsNullOrWhiteSpace(value) && value.Contains('@')) return value;
+            }
+            string logs = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Riot Games", "Riot Client", "Logs");
+            if (Directory.Exists(logs))
+            {
+                foreach (string path in Directory.GetFiles(logs, "Riot Client.log", SearchOption.AllDirectories).OrderByDescending(File.GetLastWriteTimeUtc).Take(3))
                 {
-                    string trimmed = line.Trim();
-                    foreach (string key in new[] { "username:", "name:", "sub:", "subject:", "puuid:" })
-                    {
-                        if (trimmed.StartsWith(key, StringComparison.OrdinalIgnoreCase))
-                        {
-                            string value = trimmed[(trimmed.IndexOf(':') + 1)..].Trim().Trim('"', '\'');
-                            if (!string.IsNullOrWhiteSpace(value)) return value;
-                        }
-                    }
+                    string? value = MatchNamedValue(File.ReadAllText(path), @"(?im)(?:logged\s+in\s+as|account)\s*[:=]?\s*([\w.@-]+)");
+                    if (!string.IsNullOrWhiteSpace(value)) return value;
                 }
             }
         }
@@ -106,31 +103,56 @@ public partial class MainWindow : Window
         return "";
     }
 
+    private static string? MatchNamedValue(string text, string pattern)
+    {
+        var match = Regex.Match(text, pattern);
+        return match.Success ? match.Groups[1].Value.Trim().Trim('"', '\'') : null;
+    }
+
     private string GetEpicAccountName()
     {
         try
         {
             string configPath = Path.Combine(GetEpicSavedPath(), "Config", "Windows", "GameUserSettings.ini");
-            if (!File.Exists(configPath)) return "";
-            foreach (string line in File.ReadLines(configPath))
+            if (File.Exists(configPath))
             {
-                string trimmed = line.Trim();
-                if (trimmed.StartsWith("LastLoginUserName=", StringComparison.OrdinalIgnoreCase))
-                    return trimmed[("LastLoginUserName=".Length)..].Trim().Trim('"');
+                string? value = ReadIniValue(configPath, "LastLoginUserName") ?? ReadIniValue(configPath, "DisplayName");
+                if (!string.IsNullOrWhiteSpace(value)) return value;
+            }
+            using var key = Registry.CurrentUser.OpenSubKey(@"Software\Epic Games\EpicGamesLauncher");
+            foreach (string name in new[] { "LastLoginUserName", "DisplayName", "AccountName" })
+            {
+                string? value = key?.GetValue(name)?.ToString();
+                if (!string.IsNullOrWhiteSpace(value)) return value;
             }
         }
         catch { }
         return "";
     }
 
+    private static string? ReadIniValue(string path, string key)
+    {
+        foreach (string line in File.ReadLines(path))
+        {
+            string trimmed = line.Trim();
+            int equals = trimmed.IndexOf('=');
+            if (equals > 0 && trimmed[..equals].Trim().Equals(key, StringComparison.OrdinalIgnoreCase))
+                return trimmed[(equals + 1)..].Trim().Trim('"');
+        }
+        return null;
+    }
+
     private bool IsAlreadyAdded(string platform, string username) =>
-        AllAccounts.Any(a => a.Platform.Equals(platform, StringComparison.OrdinalIgnoreCase) &&
-                             a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
+        AllAccounts.Any(a => a.Platform.Equals(platform, StringComparison.OrdinalIgnoreCase) && a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
 
     private void AddAccount_Click(object sender, RoutedEventArgs e)
     {
         string username = DetectAccountName(_currentPlatform);
-        if (string.IsNullOrWhiteSpace(username)) username = "New_" + _currentPlatform + "_Account";
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            MessageBox.Show("Please sign in to your " + _currentPlatform + " account first!", "Sign In Required", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
         if (IsAlreadyAdded(_currentPlatform, username))
         {
             MessageBox.Show("This account is already added!", "Notice", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -152,7 +174,6 @@ public partial class MainWindow : Window
                 KillProcesses("steam");
                 using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam", true)) key?.SetValue("AutoLoginUser", "");
                 Process.Start(new ProcessStartInfo("steam://open/main") { UseShellExecute = true });
-                MessageBox.Show("Please log in to your Steam account. Once logged in, click 'Add Account' to save it automatically.", "Login New Account", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else if (_currentPlatform == "Riot")
             {
@@ -160,19 +181,14 @@ public partial class MainWindow : Window
                 string activeSettings = FindRiotSettingsFile();
                 if (activeSettings != null) File.Move(activeSettings, activeSettings + ".willenswitcher-backup", true);
                 StartRiotClient();
-                MessageBox.Show("Please log in to Riot Client, then click Add Account.", "Login New Account", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else if (_currentPlatform == "Epic")
             {
                 KillProcesses("EpicGamesLauncher");
                 StartEpicLauncher();
-                MessageBox.Show("Please log in to Epic Games, then click Add Account.", "Login New Account", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
-        catch (Exception ex)
-        {
-            MessageBox.Show("Could not start the login flow: " + ex.Message, "Login Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+        catch (Exception ex) { MessageBox.Show("Could not start the login flow: " + ex.Message, "Login Error", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 
     private void DeleteAccount_Click(object sender, RoutedEventArgs e)
@@ -286,7 +302,7 @@ public partial class MainWindow : Window
             string candidate = Path.Combine(dataPath, name);
             if (File.Exists(candidate)) return candidate;
         }
-        return null;
+        return "";
     }
 
     private static void CopyDirectory(string source, string destination)
@@ -361,24 +377,11 @@ public class Account
             {
                 if (!string.IsNullOrWhiteSpace(AvatarPath) && File.Exists(AvatarPath))
                 {
-                    var image = new BitmapImage();
-                    image.BeginInit();
-                    image.UriSource = new Uri(AvatarPath, UriKind.Absolute);
-                    image.CacheOption = BitmapCacheOption.OnLoad;
-                    image.EndInit();
-                    image.Freeze();
-                    return image;
+                    var image = new BitmapImage(); image.BeginInit(); image.UriSource = new Uri(AvatarPath, UriKind.Absolute); image.CacheOption = BitmapCacheOption.OnLoad; image.EndInit(); image.Freeze(); return image;
                 }
             }
             catch { }
-
-            string asset = Platform switch
-            {
-                "Steam" => "/Assets/steam.png",
-                "Riot" => "/Assets/riot.png",
-                "Epic" => "/Assets/epic.png",
-                _ => "/Assets/steam.png"
-            };
+            string asset = Platform switch { "Steam" => "/Assets/steam.png", "Riot" => "/Assets/riot.png", "Epic" => "/Assets/epic.png", _ => "/Assets/steam.png" };
             return new BitmapImage(new Uri("pack://application:,,," + asset, UriKind.Absolute));
         }
     }
