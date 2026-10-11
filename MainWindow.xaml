@@ -258,21 +258,21 @@
                                             Orientation="Horizontal"
                                             VerticalAlignment="Center"
                                             Margin="16,0,0,0">
-                                    <Button Content="Delete"
-                                            Click="DeleteAccount_Click"
+                                    <Button Content="Save Note"
+                                            Click="SaveNote_Click"
                                             Tag="{Binding}"
-                                            Style="{StaticResource DeleteButtonStyle}"
-                                            Margin="0,0,8,0" />
+                                            Style="{StaticResource NoteSaveButtonStyle}"
+                                            Margin="0,0,8,0"
+                                            ToolTip="Save account note" />
                                     <Button Content="Switch"
                                             Click="SwitchAccount_Click"
                                             Tag="{Binding}"
                                             Style="{StaticResource CardActionButtonStyle}"
                                             Margin="0,0,8,0" />
-                                    <Button Content="Save Note"
-                                            Click="SaveNote_Click"
+                                    <Button Content="Delete"
+                                            Click="DeleteAccount_Click"
                                             Tag="{Binding}"
-                                            Style="{StaticResource NoteSaveButtonStyle}"
-                                            ToolTip="Save account note" />
+                                            Style="{StaticResource DeleteButtonStyle}" />
                                 </StackPanel>
                             </Grid>
                         </Border>
