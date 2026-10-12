@@ -113,10 +113,10 @@ public partial class MainWindow : Window
             {
                 string text;
                 try { text = ReadFileShared(path); } catch { continue; }
-                string? gameName = MatchNamedValue(text, @"\"game_name\"\s*:\s*\"([^\"]+)\"") ?? MatchNamedValue(text, @"(?im)game_name:\s*\"?([^\"\r\n]+)");
-                string? tagLine = MatchNamedValue(text, @"\"tag_line\"\s*:\s*\"([^\"]+)\"") ?? MatchNamedValue(text, @"(?im)tag_line:\s*\"?([^\"\r\n]+)");
+                string? gameName = MatchNamedValue(text, @"""game_name""\s*:\s*""([^""]+)""") ?? MatchNamedValue(text, @"(?im)game_name:\s*""?([^""\r\n]+)");
+                string? tagLine = MatchNamedValue(text, @"""tag_line""\s*:\s*""([^""]+)""") ?? MatchNamedValue(text, @"(?im)tag_line:\s*""?([^""\r\n]+)");
                 if (Plausible(gameName) && Plausible(tagLine)) return gameName!.Trim() + "#" + tagLine!.Trim();
-                string? display = MatchNamedValue(text, @"(?im)displayName:\s*\"?([^\"\r\n]+)") ?? MatchNamedValue(text, @"\"game_name\"\s*:\s*\"([^\"]+)\"");
+                string? display = MatchNamedValue(text, @"(?im)displayName:\s*""?([^""\r\n]+)") ?? MatchNamedValue(text, @"""game_name""\s*:\s*""([^""]+)""");
                 if (Plausible(display)) return display!.Trim();
                 if (path.Contains(Path.DirectorySeparatorChar + "Logs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                 {
@@ -141,9 +141,12 @@ public partial class MainWindow : Window
             {
                 string text;
                 try { text = ReadFileShared(path); } catch (IOException) { continue; } catch (UnauthorizedAccessException) { continue; }
-                var patterns = new[] { @"""(?:DisplayName|display_name|displayName)""\s*:\s*""(?<name>[^""]{1,64})""", @"(?:DisplayName|display_name|displayName|EpicAccountName)\s*[:=]\s*["']?(?<name>[^
-,"']{1,64})", @"(?i)logged\s+in\s+as|signed\s+in\s+as|user\s+name\s*[:=]?\s*["']?(?<name>[^
-,"']{1,64})", @"User\s+[0-9a-f]{32}\s*\((?<name>[^)\r\n]{1,64})\)\s*signed\s*in" };
+                var patterns = new[] {
+                    @"""(?:DisplayName|display_name|displayName)""\s*:\s*""(?<name>[^""]{1,64})""",
+                    @"(?:DisplayName|display_name|displayName|EpicAccountName)\s*[:=]\s*[""']?(?<name>[^\r\n,""']{1,64})",
+                    @"(?i)(?:logged\s+in\s+as|signed\s+in\s+as|user\s+name)\s*[:=]?\s*[""']?(?<name>[^\r\n,""']{1,64})",
+                    @"User\s+[0-9a-f]{32}\s*\((?<name>[^)\r\n]{1,64})\)\s*signed\s*in"
+                };
                 foreach (string pattern in patterns) { var matches = Regex.Matches(text, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant); for (int i = matches.Count - 1; i >= 0; i--) { string name = matches[i].Groups["name"].Value.Trim(); if (Plausible(name) && !LooksLikeEpicIdentifier(name)) return name; } }
             }
         }
