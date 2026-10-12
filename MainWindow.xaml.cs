@@ -151,20 +151,35 @@ public partial class MainWindow : Window
         {
             if (_currentPlatform == "Steam") { KillProcesses("steam"); using var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam", true); key?.SetValue("AutoLoginUser", ""); Process.Start(new ProcessStartInfo("steam://open/main") { UseShellExecute = true }); }
             else if (_currentPlatform == "Riot") { KillProcesses("RiotClientServices", "RiotClientUx", "RiotClientUxRender", "VALORANT", "LeagueClient", "LeagueClientUx"); StartRiotClient(); }
-            else if (_currentPlatform == "Epic") { KillProcesses("EpicGamesLauncher", "EpicWebHelper"); string activeName = GetEpicAccountName(); if (!string.IsNullOrWhiteSpace(activeName)) SaveEpicSessionSnapshot(activeName); ClearEpicActiveSession(); StartEpicLauncher(); }
+            else if (_currentPlatform == "Epic") { KillProcesses("EpicGamesLauncher", "EpicWebHelper", "UnrealCEFSubProcess"); string activeName = GetEpicAccountName(); if (!string.IsNullOrWhiteSpace(activeName)) SaveEpicSessionSnapshot(activeName); ClearEpicActiveSession(); StartEpicLauncher(); }
         }
         catch (Exception ex) { MessageBox.Show("Could not start the login flow: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
     private void DeleteAccount_Click(object sender, RoutedEventArgs e) { if (sender is FrameworkElement el && el.DataContext is Account a) { AllAccounts.Remove(a); SaveAccountsToJson(); RefreshFilteredList(); } }
     private void SwitchAccount_Click(object sender, RoutedEventArgs e) { if (sender is FrameworkElement el && el.DataContext is Account a) { if (a.Platform == "Steam") SwitchSteamAccount(a.Username); else if (a.Platform == "Riot") SwitchRiotAccount(a); else if (a.Platform == "Epic") SwitchEpicAccount(a); } }
-    private void KillProcesses(params string[] names) { foreach (string n in names) foreach (var p in Process.GetProcessesByName(n)) { try { p.Kill(); p.WaitForExit(3000); } catch { } finally { p.Dispose(); } } }
+    private void KillProcesses(params string[] names)
+    {
+        foreach (string n in names)
+        {
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                var processes = Process.GetProcessesByName(n);
+                if (processes.Length == 0) break;
+                foreach (var p in processes)
+                {
+                    try { p.Kill(); p.WaitForExit(3000); } catch { } finally { p.Dispose(); }
+                }
+                if (Process.GetProcessesByName(n).Length == 0) break;
+            }
+        }
+    }
     private void SwitchSteamAccount(string username) { try { KillProcesses("steam"); using var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam", true); if (key != null) { key.SetValue("AutoLoginUser", username); key.SetValue("RememberPassword", 1); } Process.Start(new ProcessStartInfo("steam://open/main") { UseShellExecute = true }); } catch (Exception ex) { MessageBox.Show("Error switching account: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); } }
     private void SwitchRiotAccount(Account a) { try { SaveSessionSnapshot(a); KillProcesses("RiotClientServices", "RiotClientUx", "RiotClientUxRender", "VALORANT", "LeagueClient", "LeagueClientUx"); string from = Path.Combine(GetSessionPath("Riot", a.Username), "Data"); if (Directory.Exists(from)) CopyDirectory(from, GetRiotDataPath()); StartRiotClient(); } catch (Exception ex) { MessageBox.Show("Could not switch Riot account: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); } }
     private void SwitchEpicAccount(Account a)
     {
         try
         {
-            KillProcesses("EpicGamesLauncher", "EpicWebHelper");
+            KillProcesses("EpicGamesLauncher", "EpicWebHelper", "UnrealCEFSubProcess");
             string currentName = GetEpicAccountName();
             if (!string.IsNullOrWhiteSpace(currentName) && !currentName.Equals(a.Username, StringComparison.OrdinalIgnoreCase)) SaveEpicSessionSnapshot(currentName);
             RestoreEpicSession(a.Username);
@@ -193,9 +208,22 @@ public partial class MainWindow : Window
         foreach (string name in new[] { "Config", "Data", "webcache", "webcache_4147", "webcache_4430", "webcache_4431" })
         {
             string path = Path.Combine(saved, name);
-            try { if (Directory.Exists(path)) Directory.Delete(path, true); else if (File.Exists(path)) File.Delete(path); } catch (IOException) { }
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                try { if (Directory.Exists(path)) Directory.Delete(path, true); else if (File.Exists(path)) File.Delete(path); break; }
+                catch (IOException) { if (attempt < 2) System.Threading.Thread.Sleep(500); }
+                catch (UnauthorizedAccessException) { if (attempt < 2) System.Threading.Thread.Sleep(500); }
+            }
         }
-        if (Directory.Exists(saved)) foreach (string path in Directory.GetDirectories(saved, "webcache*", SearchOption.TopDirectoryOnly)) try { Directory.Delete(path, true); } catch (IOException) { }
+        if (Directory.Exists(saved)) foreach (string path in Directory.GetDirectories(saved, "webcache*", SearchOption.TopDirectoryOnly))
+        {
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                try { Directory.Delete(path, true); break; }
+                catch (IOException) { if (attempt < 2) System.Threading.Thread.Sleep(500); }
+                catch (UnauthorizedAccessException) { if (attempt < 2) System.Threading.Thread.Sleep(500); }
+            }
+        }
     }
     private void SaveSessionSnapshot(Account a) { try { string target = GetSessionPath(a.Platform, a.Username); if (a.Platform == "Riot" && Directory.Exists(GetRiotDataPath())) CopyDirectory(GetRiotDataPath(), Path.Combine(target, "Data")); else if (a.Platform == "Epic" && Directory.Exists(GetEpicSavedPath())) { string dest = Path.Combine(target, "Saved"); if (Directory.Exists(dest)) Directory.Delete(dest, true); CopyDirectory(GetEpicSavedPath(), dest); } } catch { } }
     private string GetSessionPath(string platform, string username) => Path.Combine(_sessionsPath, platform, MakeSafeFileName(username));
