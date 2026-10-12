@@ -11,6 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Microsoft.Win32;
 
 namespace WillenSwitcher;
 
@@ -172,7 +173,7 @@ public partial class MainWindow : Window
         {
             username = Microsoft.VisualBasic.Interaction.InputBox("Enter Riot ID (e.g. Name#TAG):", "Riot Account Name", "").Trim();
         }
-                if (string.IsNullOrWhiteSpace(username)) { MessageBox.Show("Please sign in to your " + _currentPlatform + " account first!", "Sign In Required", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (string.IsNullOrWhiteSpace(username)) { MessageBox.Show("Please sign in to your " + _currentPlatform + " account first!", "Sign In Required", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (IsAlreadyAdded(_currentPlatform, username)) { MessageBox.Show("This account is already added!", "Notice", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         var account = new Account { Username = username, DisplayName = username, Platform = _currentPlatform, Note = "Main Account" }; if (_currentPlatform == "Steam") UpdateSteamAccountDetails(account);
         AllAccounts.Add(account); SaveSessionSnapshot(account); SaveAccountsToJson(); RefreshFilteredList();
@@ -356,5 +357,33 @@ public partial class MainWindow : Window
         Directory.CreateDirectory(destDir);
         foreach (string file in Directory.GetFiles(sourceDir)) File.Copy(file, Path.Combine(destDir, Path.GetFileName(file)), true);
         foreach (string directory in Directory.GetDirectories(sourceDir)) CopyDirectory(directory, Path.Combine(destDir, Path.GetFileName(directory)));
+    }
+}
+
+public class Account
+{
+    public string Username { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public string Platform { get; set; } = "Steam";
+    public string Note { get; set; } = "";
+    public string? AvatarPath { get; set; }
+
+    [JsonIgnore]
+    public ImageSource AvatarSource
+    {
+        get
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(AvatarPath))
+                {
+                    if (Uri.TryCreate(AvatarPath, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)) return new BitmapImage(uri);
+                    if (File.Exists(AvatarPath)) { var image = new BitmapImage(); image.BeginInit(); image.UriSource = new Uri(AvatarPath, UriKind.Absolute); image.CacheOption = BitmapCacheOption.OnLoad; image.EndInit(); image.Freeze(); return image; }
+                }
+            }
+            catch { }
+            string asset = Platform switch { "Steam" => "/Assets/steam.png", "Riot" => "/Assets/riot.png", "Epic" => "/Assets/epic.png", _ => "/Assets/steam.png" };
+            return new BitmapImage(new Uri("pack://application:,,," + asset, UriKind.Absolute));
+        }
     }
 }
