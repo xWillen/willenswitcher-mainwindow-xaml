@@ -1,1 +1,1 @@
-// Unable to preserve file contents safely through this interface.
+Unable to safely reconstruct full file content from GitHub result in a shell buffer.
