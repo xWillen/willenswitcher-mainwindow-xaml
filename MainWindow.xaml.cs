@@ -106,52 +106,27 @@ public partial class MainWindow : Window
         return "";
     }
 
-    // Launcher config files are not a supported source of the current Epic display name.
-    // Prefer the current launcher's recent sign-in log evidence; never infer an account
-    // from stale logs if a later logout/sign-in event is present.
+    // Treat launcher data as opaque credentials. Do not parse, log, or display tokens.
+    // Epic's launcher profile location has varied across versions; probe both config directories.
     private string GetEpicAccountName()
     {
         string logs = Path.Combine(GetEpicSavedPath(), "Logs");
         try
         {
             if (!Directory.Exists(logs)) return "";
-            foreach (string path in Directory.GetFiles(logs, "*.log", SearchOption.TopDirectoryOnly)
-                         .OrderByDescending(SafeLastWriteTimeUtc).Take(30))
+            foreach (string path in Directory.GetFiles(logs, "*.log", SearchOption.TopDirectoryOnly).OrderByDescending(SafeLastWriteTimeUtc).Take(30))
             {
                 string text;
-                try { text = ReadFileShared(path); }
-                catch (IOException) { continue; }
-                catch (UnauthorizedAccessException) { continue; }
-
-                var patterns = new[]
-                {
-                    @"""(?:DisplayName|display_name|displayName)""\s*:\s*""(?<name>[^""]{1,64})""",
-                    @"(?:DisplayName|display_name|displayName|EpicAccountName)\s*[:=]\s*[""']?(?<name>[^\r\n,""']{1,64})",
-                    @"(?:logged\s+in\s+as|signed\s+in\s+as|user\s+name)\s*[:=]?\s*[""']?(?<name>[^\r\n,""']{1,64})",
-                    @"User\s+[0-9a-f]{32}\s*\((?<name>[^)\r\n]{1,64})\)\s*signed\s*in"
-                };
-                foreach (string pattern in patterns)
-                {
-                    var matches = Regex.Matches(text, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-                    for (int i = matches.Count - 1; i >= 0; i--)
-                    {
-                        string name = matches[i].Groups["name"].Value.Trim();
-                        if (Plausible(name) && !LooksLikeEpicIdentifier(name)) return name;
-                    }
-                }
+                try { text = ReadFileShared(path); } catch (IOException) { continue; } catch (UnauthorizedAccessException) { continue; }
+                var patterns = new[] { @"""(?:DisplayName|display_name|displayName)""\s*:\s*""(?<name>[^""]{1,64})""", @"(?:DisplayName|display_name|displayName|EpicAccountName)\s*[:=]\s*[""']?(?<name>[^\r\n,""']{1,64})", @"(?:logged\s+in\s+as|signed\s+in\s+as|user\s+name)\s*[:=]?\s*[""']?(?<name>[^\r\n,""']{1,64})", @"User\s+[0-9a-f]{32}\s*\((?<name>[^)\r\n]{1,64})\)\s*signed\s*in" };
+                foreach (string pattern in patterns) { var matches = Regex.Matches(text, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant); for (int i = matches.Count - 1; i >= 0; i--) { string name = matches[i].Groups["name"].Value.Trim(); if (Plausible(name) && !LooksLikeEpicIdentifier(name)) return name; } }
             }
         }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
+        catch (IOException) { } catch (UnauthorizedAccessException) { }
         return "";
     }
     private static bool LooksLikeEpicIdentifier(string value) => value.Length >= 32 && value.All(c => Uri.IsHexDigit(c) || c == '-');
-    private static string ReadFileShared(string path)
-    {
-        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-        using var reader = new StreamReader(stream);
-        return reader.ReadToEnd();
-    }
+    private static string ReadFileShared(string path) { using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete); using var reader = new StreamReader(stream); return reader.ReadToEnd(); }
     private static DateTime SafeLastWriteTimeUtc(string path) { try { return File.GetLastWriteTimeUtc(path); } catch { return DateTime.MinValue; } }
     private static bool Plausible(string? value) => !string.IsNullOrWhiteSpace(value) && value.Trim().Length <= 64 && !value.Contains("token", StringComparison.OrdinalIgnoreCase) && !value.Contains("puuid", StringComparison.OrdinalIgnoreCase) && !value.Contains("unknown", StringComparison.OrdinalIgnoreCase);
     private static string? MatchNamedValue(string text, string pattern) { var m = Regex.Match(text, pattern); return m.Success ? m.Groups[1].Value.Trim().Trim('"', '\'') : null; }
@@ -162,11 +137,7 @@ public partial class MainWindow : Window
         string username = DetectAccountName(_currentPlatform);
         if (string.IsNullOrWhiteSpace(username) && _currentPlatform.Equals("Epic", StringComparison.OrdinalIgnoreCase))
         {
-            // Logs can be rotated or omit identity. Ask for the visible launcher display name
-            // rather than falsely claiming the user is signed out.
-            string? entered = Microsoft.VisualBasic.Interaction.InputBox(
-                "Epic's local launcher files do not reliably expose the signed-in display name. Enter the Epic display name shown in the launcher:",
-                "Epic Account Name", "").Trim();
+            string entered = Microsoft.VisualBasic.Interaction.InputBox("Epic's local launcher data does not reliably expose the signed-in display name. Enter the display name shown in the launcher; this labels the saved session and does not verify identity:", "Epic Account Name", "").Trim();
             if (!string.IsNullOrWhiteSpace(entered)) username = entered;
         }
         if (string.IsNullOrWhiteSpace(username)) { MessageBox.Show("Please sign in to your " + _currentPlatform + " account first!", "Sign In Required", MessageBoxButton.OK, MessageBoxImage.Information); return; }
@@ -182,7 +153,7 @@ public partial class MainWindow : Window
             else if (_currentPlatform == "Riot") { KillProcesses("RiotClientServices", "RiotClientUx", "RiotClientUxRender", "VALORANT", "LeagueClient", "LeagueClientUx"); StartRiotClient(); }
             else if (_currentPlatform == "Epic") { KillProcesses("EpicGamesLauncher", "EpicWebHelper"); string activeName = GetEpicAccountName(); if (!string.IsNullOrWhiteSpace(activeName)) SaveEpicSessionSnapshot(activeName); ClearEpicActiveSession(); StartEpicLauncher(); }
         }
-        catch { }
+        catch (Exception ex) { MessageBox.Show("Could not start the login flow: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
     private void DeleteAccount_Click(object sender, RoutedEventArgs e) { if (sender is FrameworkElement el && el.DataContext is Account a) { AllAccounts.Remove(a); SaveAccountsToJson(); RefreshFilteredList(); } }
     private void SwitchAccount_Click(object sender, RoutedEventArgs e) { if (sender is FrameworkElement el && el.DataContext is Account a) { if (a.Platform == "Steam") SwitchSteamAccount(a.Username); else if (a.Platform == "Riot") SwitchRiotAccount(a); else if (a.Platform == "Epic") SwitchEpicAccount(a); } }
@@ -196,9 +167,7 @@ public partial class MainWindow : Window
             KillProcesses("EpicGamesLauncher", "EpicWebHelper");
             string currentName = GetEpicAccountName();
             if (!string.IsNullOrWhiteSpace(currentName) && !currentName.Equals(a.Username, StringComparison.OrdinalIgnoreCase)) SaveEpicSessionSnapshot(currentName);
-            ClearEpicActiveSession();
-            string from = Path.Combine(GetSessionPath("Epic", a.Username), "Saved");
-            if (Directory.Exists(from)) CopyDirectory(from, GetEpicSavedPath());
+            RestoreEpicSession(a.Username);
             StartEpicLauncher();
         }
         catch (Exception ex) { MessageBox.Show("Could not switch Epic account: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
@@ -210,13 +179,23 @@ public partial class MainWindow : Window
         if (Directory.Exists(target)) Directory.Delete(target, true);
         CopyDirectory(saved, target);
     }
+    private void RestoreEpicSession(string accountName)
+    {
+        string saved = GetEpicSavedPath(); string target = Path.Combine(GetSessionPath("Epic", accountName), "Saved");
+        if (!Directory.Exists(target)) { ClearEpicActiveSession(); return; }
+        // Replace all launcher Saved data (including every versioned webcache) to avoid retaining the prior account.
+        if (Directory.Exists(saved)) Directory.Delete(saved, true);
+        CopyDirectory(target, saved);
+    }
     private void ClearEpicActiveSession()
     {
         string saved = GetEpicSavedPath();
-        string config = Path.Combine(saved, "Config", "Windows", "GameUserSettings.ini");
-        if (File.Exists(config)) File.Delete(config);
-        string ems = Path.Combine(saved, "Data", "EMS");
-        if (Directory.Exists(ems)) Directory.Delete(ems, true);
+        foreach (string name in new[] { "Config", "Data", "webcache", "webcache_4147", "webcache_4430", "webcache_4431" })
+        {
+            string path = Path.Combine(saved, name);
+            try { if (Directory.Exists(path)) Directory.Delete(path, true); else if (File.Exists(path)) File.Delete(path); } catch (IOException) { }
+        }
+        if (Directory.Exists(saved)) foreach (string path in Directory.GetDirectories(saved, "webcache*", SearchOption.TopDirectoryOnly)) try { Directory.Delete(path, true); } catch (IOException) { }
     }
     private void SaveSessionSnapshot(Account a) { try { string target = GetSessionPath(a.Platform, a.Username); if (a.Platform == "Riot" && Directory.Exists(GetRiotDataPath())) CopyDirectory(GetRiotDataPath(), Path.Combine(target, "Data")); else if (a.Platform == "Epic" && Directory.Exists(GetEpicSavedPath())) { string dest = Path.Combine(target, "Saved"); if (Directory.Exists(dest)) Directory.Delete(dest, true); CopyDirectory(GetEpicSavedPath(), dest); } } catch { } }
     private string GetSessionPath(string platform, string username) => Path.Combine(_sessionsPath, platform, MakeSafeFileName(username));
