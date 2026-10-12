@@ -94,28 +94,36 @@ public partial class MainWindow : Window
 
     private string GetRiotAccountName()
     {
+        string data = GetRiotDataPath();
+        string root = Path.GetDirectoryName(data)!;
+        string logs = Path.Combine(root, "Logs");
+        string config = Path.Combine(root, "Config");
+        var files = new List<string>();
         try
         {
-            string data = GetRiotDataPath();
-            string settings = Path.Combine(data, "RiotClientPrivateSettings.yaml");
-            if (File.Exists(settings))
+            if (Directory.Exists(data))
             {
-                string text = ReadFileShared(settings);
-                string? gameName = MatchNamedValue(text, @"(?im)^\s*game_name\s*:\s*[""']?([^\r\n""']+)");
-                string? tagLine = MatchNamedValue(text, @"(?im)^\s*tag_line\s*:\s*[""']?([^\r\n""']+)");
-                if (Plausible(gameName) && Plausible(tagLine)) return gameName!.Trim() + "#" + tagLine!.Trim();
-                string? display = MatchNamedValue(text, @"(?im)^\s*(?:display_name|displayName)\s*:\s*[""']?([^\r\n""']+)");
-                if (Plausible(display)) return display!.Trim();
+                string privateSettings = Path.Combine(data, "RiotClientPrivateSettings.yaml");
+                if (File.Exists(privateSettings)) files.Add(privateSettings);
+                files.AddRange(Directory.GetFiles(data, "*.yaml", SearchOption.AllDirectories));
+                files.AddRange(Directory.GetFiles(data, "*.json", SearchOption.AllDirectories));
             }
-            string log = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Riot Games", "Riot Client", "Logs", "Riot Client.log");
-            if (File.Exists(log))
+            if (Directory.Exists(config)) files.AddRange(Directory.GetFiles(config, "*", SearchOption.AllDirectories).Where(File.Exists));
+            if (Directory.Exists(logs)) files.AddRange(Directory.GetFiles(logs, "*.log", SearchOption.AllDirectories));
+            foreach (string path in files.Distinct(StringComparer.OrdinalIgnoreCase).OrderByDescending(p => p.EndsWith("RiotClientPrivateSettings.yaml", StringComparison.OrdinalIgnoreCase)).ThenByDescending(SafeLastWriteTimeUtc))
             {
-                string text = ReadFileShared(log);
-                string? gameName = MatchNamedValue(text, @"(?im)game_name\s*[:=]\s*[""']?([^\r\n,""']+)");
-                string? tagLine = MatchNamedValue(text, @"(?im)tag_line\s*[:=]\s*[""']?([^\r\n,""']+)");
+                string text;
+                try { text = ReadFileShared(path); } catch { continue; }
+                string? gameName = MatchNamedValue(text, @"\"game_name\"\s*:\s*\"([^\"]+)\"") ?? MatchNamedValue(text, @"(?im)game_name:\s*\"?([^\"\r\n]+)");
+                string? tagLine = MatchNamedValue(text, @"\"tag_line\"\s*:\s*\"([^\"]+)\"") ?? MatchNamedValue(text, @"(?im)tag_line:\s*\"?([^\"\r\n]+)");
                 if (Plausible(gameName) && Plausible(tagLine)) return gameName!.Trim() + "#" + tagLine!.Trim();
-                string? display = MatchNamedValue(text, @"(?im)(?:display_name|displayName)\s*[:=]\s*[""']?([^\r\n,""']+)");
+                string? display = MatchNamedValue(text, @"(?im)displayName:\s*\"?([^\"\r\n]+)") ?? MatchNamedValue(text, @"\"game_name\"\s*:\s*\"([^\"]+)\"");
                 if (Plausible(display)) return display!.Trim();
+                if (path.Contains(Path.DirectorySeparatorChar + "Logs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                {
+                    string? logged = MatchNamedValue(text, @"(?im)Logged in as\s+([^\r\n,]+)") ?? MatchNamedValue(text, @"(?im)Riot ID:\s*([^\r\n,]+)") ?? MatchNamedValue(text, @"(?im)Player\s+([^\r\n#]+#[A-Za-z0-9]+)");
+                    if (Plausible(logged)) return logged!.Trim();
+                }
             }
         }
         catch { }
@@ -155,6 +163,15 @@ public partial class MainWindow : Window
         {
             string entered = Microsoft.VisualBasic.Interaction.InputBox("Epic's local launcher data does not reliably expose the signed-in display name. Enter the display name shown in the launcher; this labels the saved session and does not verify identity:", "Epic Account Name", "").Trim();
             if (!string.IsNullOrWhiteSpace(entered)) username = entered;
+        }
+        if (string.IsNullOrWhiteSpace(username) && _currentPlatform.Equals("Riot", StringComparison.OrdinalIgnoreCase))
+        {
+            string data = GetRiotDataPath();
+            bool hasSession = Directory.Exists(data) && (Directory.GetFiles(data, "*", SearchOption.AllDirectories).Length > 0 || File.Exists(Path.Combine(data, "RiotClientPrivateSettings.yaml")));
+            string entered = Microsoft.VisualBasic.Interaction.InputBox("Enter Riot ID (e.g. Willen#KSA) / ادخل اسم الحساب أو Riot ID", "Riot Account Name", "").Trim();
+            if (!string.IsNullOrWhiteSpace(entered)) username = entered;
+            else if (!hasSession) { MessageBox.Show("Please sign in to your Riot account first!", "Sign In Required", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+            else return;
         }
         if (string.IsNullOrWhiteSpace(username)) { MessageBox.Show("Please sign in to your " + _currentPlatform + " account first!", "Sign In Required", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         if (IsAlreadyAdded(_currentPlatform, username)) { MessageBox.Show("This account is already added!", "Notice", MessageBoxButton.OK, MessageBoxImage.Information); return; }
