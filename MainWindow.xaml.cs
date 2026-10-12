@@ -1,1 +1,1 @@
-I cannot safely submit the file content because the current repository file was truncated in tool output.
+Need full content
