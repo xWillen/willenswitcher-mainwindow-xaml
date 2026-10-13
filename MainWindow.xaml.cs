@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
@@ -63,11 +64,12 @@ public partial class MainWindow : Window
         return _dialogTcs.Task;
     }
 
-    public MainWindow()
+    private void Window_MouseDown(object sender, MouseButtonEventArgs e)
     {
-        InitializeComponent(); AccountsList.ItemsSource = FilteredAccounts; LoadAccountsFromJson();
-        foreach (var account in AllAccounts.Where(a => a.Platform.Equals("Steam", StringComparison.OrdinalIgnoreCase))) UpdateSteamAccountDetails(account);
-        DetectAndSaveActiveAccount("Steam"); RefreshFilteredList();
+        if (e.LeftButton == MouseButtonState.Pressed && e.OriginalSource is not Button)
+        {
+            DragMove();
+        }
     }
 
     private void MinimizeButton_Click(object sender, RoutedEventArgs e)
@@ -83,6 +85,13 @@ public partial class MainWindow : Window
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+
+    public MainWindow()
+    {
+        InitializeComponent(); AccountsList.ItemsSource = FilteredAccounts; LoadAccountsFromJson();
+        foreach (var account in AllAccounts.Where(a => a.Platform.Equals("Steam", StringComparison.OrdinalIgnoreCase))) UpdateSteamAccountDetails(account);
+        DetectAndSaveActiveAccount("Steam"); RefreshFilteredList();
     }
 
     private void PlatformNav_Click(object sender, RoutedEventArgs e)
@@ -373,73 +382,117 @@ public partial class MainWindow : Window
     }
     private void SaveEpicSessionSnapshot(string accountName)
     {
-        foreach (string source in GetEpicProfileDirectories())
-        {
-            if (!Directory.Exists(source)) continue;
-            string destination = Path.Combine(GetSessionPath("Epic", accountName), "Profiles", GetEpicProfileFolderName(source));
-            CopyDirectory(source, destination);
-        }
-    }
-    private void ClearEpicActiveSession()
-    {
-        foreach (string path in GetEpicProfileDirectories())
-        {
-            if (Directory.Exists(path)) Directory.Delete(path, true);
-        }
+        string? profile = GetEpicProfileDirectory(accountName);
+        if (profile == null) return;
+        string target = GetSessionPath("Epic", accountName);
+        if (Directory.Exists(target)) Directory.Delete(target, true);
+        CopyDirectory(profile, target);
     }
     private void CopyEpicSessionSnapshot(string accountName)
     {
-        string root = Path.Combine(GetSessionPath("Epic", accountName), "Profiles");
-        if (!Directory.Exists(root)) return;
-        foreach (string source in Directory.GetDirectories(root))
+        string source = GetSessionPath("Epic", accountName);
+        if (!Directory.Exists(source)) return;
+        string? target = GetEpicProfileDirectory(accountName);
+        if (target == null) target = GetEpicProfileDirectories().FirstOrDefault();
+        if (target != null) CopyDirectory(source, target);
+    }
+    private void ClearEpicActiveSession()
+    {
+        foreach (string directory in GetEpicProfileDirectories())
         {
-            string destination = GetEpicProfilePath(Path.GetFileName(source));
-            CopyDirectory(source, destination);
+            foreach (string file in new[] { "webcache", "webcache_4430", "webcache_4147", "Saved", "Config" })
+            {
+                string path = Path.Combine(directory, file);
+                if (Directory.Exists(path)) Directory.Delete(path, true);
+                else if (File.Exists(path)) File.Delete(path);
+            }
         }
     }
-    private void StartEpicLauncher()
+    private string? GetEpicProfileDirectory(string accountName)
     {
-        string? exe = new[] { Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Epic Games", "Launcher", "Portal", "Binaries", "Win64", "EpicGamesLauncher.exe"), Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Epic Games", "Launcher", "Portal", "Binaries", "Win64", "EpicGamesLauncher.exe") }.FirstOrDefault(File.Exists);
-        if (exe != null) Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true });
-        else MessageBox.Show("Epic Games Launcher was not found.", "Action Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+        foreach (string root in GetEpicProfileDirectories())
+        {
+            if (!Directory.Exists(root)) continue;
+            foreach (string folder in Directory.GetDirectories(root))
+            {
+                string name = Path.GetFileName(folder);
+                if (name.Equals(accountName, StringComparison.OrdinalIgnoreCase) || name.Equals(Sanitize(accountName), StringComparison.OrdinalIgnoreCase)) return folder;
+            }
+        }
+        return null;
     }
-    private string[] GetEpicProfileDirectories()
+    private IEnumerable<string> GetEpicProfileDirectories()
     {
-        string local = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "EpicGamesLauncher", "Saved");
-        return new[] { Path.Combine(local, "Config", "Windows"), Path.Combine(local, "Config", "WindowsEditor"), Path.Combine(local, "WebCache"), Path.Combine(local, "webcache") }.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        yield return Path.Combine(local, "EpicGamesLauncher", "Saved", "Config", "Windows");
+        yield return Path.Combine(local, "EpicGamesLauncher", "Saved", "webcache");
+        yield return Path.Combine(local, "EpicGamesLauncher", "Saved", "webcache_4430");
+        yield return Path.Combine(local, "EpicGamesLauncher", "Saved", "webcache_4147");
+        yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Epic", "EpicGamesLauncher", "Saved");
     }
-    private string GetEpicProfileFolderName(string path) => Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-    private string GetEpicProfilePath(string name) => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "EpicGamesLauncher", "Saved", name);
     private string GetRiotDataPath() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Riot Games", "Riot Client", "Data");
-    private string GetSessionPath(string platform, string account) => Path.Combine(_sessionsPath, platform, Regex.Replace(account, "[^a-zA-Z0-9._-]", "_"));
+    private string GetSessionPath(string platform, string username) => Path.Combine(_sessionsPath, platform, Sanitize(username));
+    private static string Sanitize(string value) { foreach (char c in Path.GetInvalidFileNameChars()) value = value.Replace(c, '_'); return value; }
     private void SaveSessionSnapshot(Account account)
     {
-        if (account.Platform == "Riot") SaveRiotSessionSnapshot(account.Username);
-        else if (account.Platform == "Epic") SaveEpicSessionSnapshot(account.Username);
-    }
-    private void CopyDirectory(string source, string destination)
-    {
-        Directory.CreateDirectory(destination);
-        foreach (string file in Directory.GetFiles(source)) File.Copy(file, Path.Combine(destination, Path.GetFileName(file)), true);
-        foreach (string directory in Directory.GetDirectories(source)) CopyDirectory(directory, Path.Combine(destination, Path.GetFileName(directory)));
-    }
-    private void SaveNote_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is FrameworkElement el && el.Tag is Account account)
+        try
         {
-            SaveAccountsToJson();
-            _ = ShowCustomMessageAsync("Note Saved", "Your account note has been saved.");
+            if (account.Platform == "Steam")
+            {
+                string source = Path.Combine(GetSteamPath(), "config");
+                if (!Directory.Exists(source)) return;
+                string target = GetSessionPath("Steam", account.Username);
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                string vdf = Path.Combine(source, "loginusers.vdf");
+                if (!File.Exists(vdf)) return;
+                Directory.CreateDirectory(target);
+                File.Copy(vdf, Path.Combine(target, "loginusers.vdf"), true);
+            }
+            else if (account.Platform == "Riot") SaveRiotSessionSnapshot(account.Username);
+            else if (account.Platform == "Epic") SaveEpicSessionSnapshot(account.Username);
         }
+        catch { }
+    }
+    private void SaveAccountsToJson()
+    {
+        try { File.WriteAllText(_jsonPath, JsonSerializer.Serialize(AllAccounts, new JsonSerializerOptions { WriteIndented = true })); }
+        catch (Exception ex) { MessageBox.Show("Could not save accounts: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
     private void LoadAccountsFromJson()
     {
         try
         {
             if (!File.Exists(_jsonPath)) return;
-            var list = JsonSerializer.Deserialize<List<Account>>(File.ReadAllText(_jsonPath));
-            if (list != null) foreach (var a in list) AllAccounts.Add(a);
+            var loaded = JsonSerializer.Deserialize<ObservableCollection<Account>>(File.ReadAllText(_jsonPath));
+            if (loaded != null) foreach (var a in loaded) AllAccounts.Add(a);
         }
         catch { }
     }
-    private void SaveAccountsToJson() => File.WriteAllText(_jsonPath, JsonSerializer.Serialize(AllAccounts, new JsonSerializerOptions { WriteIndented = true }));
+    private void SaveNote_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement el && el.DataContext is Account)
+        {
+            SaveAccountsToJson();
+            MessageBox.Show("Note saved successfully!", "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+    }
+}
+
+public class Account
+{
+    public string Username { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public string Platform { get; set; } = "";
+    public string Note { get; set; } = "";
+    public string? AvatarPath { get; set; }
+    [JsonIgnore]
+    public ImageSource? AvatarSource
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(AvatarPath)) return null;
+            if (Uri.TryCreate(AvatarPath, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)) return new BitmapImage(uri);
+            return File.Exists(AvatarPath) ? new BitmapImage(new Uri(AvatarPath, UriKind.Absolute)) : null;
+        }
+    }
 }
