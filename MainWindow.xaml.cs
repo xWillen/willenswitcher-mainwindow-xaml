@@ -12,6 +12,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
+using System.Threading;
 
 namespace WillenSwitcher;
 
@@ -160,7 +161,7 @@ public partial class MainWindow : Window
             @"""(?:DisplayName|display_name|displayName)""\s*:\s*""(?<name>[^\r\n,""']{1,64})""",
             @"(?:DisplayName|display_name|displayName|EpicAccountName)\s*[:=]\s*[""']?(?<name>[^\r\n,""']{1,64})",
             @"(?i)(?:logged\s+in\s+as|signed\s+in\s+as|user\s+name|display\s*name)\s*[:=]?\s*[""']?(?<name>[^\r\n,""']{1,64})",
-            @"User\s+[0-9a-fA-F]{32}\s+\((?<name>[^\r\n,""']{1,64})\)\s+signed\s+in",
+            @"User\s+[0-9a-fA-F]{32}\s+\((?<name>[^\r\n,""']{1,64})\)\s+signed\s*in",
             @"UserId\s+[0-9a-fA-F]+\s+has\s+display\s+name\s+'(?<name>[^'\r\n]{1,64})'",
             @"DisplayName\s*\[(?<name>[^\]\r\n]{1,64})\]",
             @"(?i)(?:logged\s+in\s+as|signed\s+in\s+as)\s+\[(?<name>[^\]\r\n]{1,64})\]"
@@ -219,7 +220,7 @@ public partial class MainWindow : Window
                 ClearRiotActiveSession();
                 StartRiotClient(true);
             }
-            else if (_currentPlatform == "Epic") { KillProcesses("EpicGamesLauncher", "EpicWebHelper", "CrashReportClient"); System.Threading.Thread.Sleep(1000); string activeName = GetEpicAccountName(); if (!string.IsNullOrWhiteSpace(activeName)) SaveEpicSessionSnapshot(activeName); ClearEpicActiveSession(); StartEpicLauncher(); }
+            else if (_currentPlatform == "Epic") { KillProcesses("EpicGamesLauncher", "EpicWebHelper", "UnrealCEFSubProcess"); string activeName = GetEpicAccountName(); if (!string.IsNullOrWhiteSpace(activeName)) SaveEpicSessionSnapshot(activeName); ClearEpicActiveSession(); StartEpicLauncher(); }
         }
         catch (Exception ex) { MessageBox.Show("Could not start the login process. " + ex.Message, "Action Failed", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
@@ -239,7 +240,7 @@ public partial class MainWindow : Window
         }
     }
     private void KillRiotProcesses() => KillProcesses("RiotClientServices", "RiotClientUx", "RiotClientUxRender", "Riot Client", "VALORANT", "LeagueClient", "LeagueClientUx");
-    private void SwitchSteamAccount(string username) { try { KillProcesses("steam"); using var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam", true); if (key != null) { key.SetValue("AutoLoginUser", username); key.SetValue("RememberPassword", 1); } Process.Start(new ProcessStartInfo("steam://open/main") { UseShellExecute = true }); } catch (Exception ex) { MessageBox.Show("Could not switch accounts. " + ex.Message, "Action Failed", MessageBoxButton.OK, MessageBoxImage.Error); } }
+    private void SwitchSteamAccount(string username) { try { KillProcesses("steam"); using var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam", true); if (key != null) { key.SetValue("AutoLoginUser", username); key.SetValue("RememberPassword", 1); } Process.Start(new ProcessStartInfo("steam://open/main") { UseShellExecute = true }); } catch (Exception ex) { MessageBox.Show("Error switching account: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); } }
     private void SwitchRiotAccount(Account a)
     {
         try
@@ -252,7 +253,7 @@ public partial class MainWindow : Window
             if (Directory.Exists(from)) CopyDirectory(from, GetRiotDataPath());
             StartRiotClient(false);
         }
-        catch (Exception ex) { MessageBox.Show("Could not switch Riot account. " + ex.Message, "Action Failed", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { MessageBox.Show("Could not switch Riot account: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
     private void SaveRiotSessionSnapshot(string accountName)
     {
@@ -299,14 +300,14 @@ public partial class MainWindow : Window
         try
         {
             KillProcesses("EpicGamesLauncher", "EpicWebHelper", "CrashReportClient");
-            System.Threading.Thread.Sleep(1000);
+            Thread.Sleep(1000);
             string currentName = GetEpicAccountName();
             if (!string.IsNullOrWhiteSpace(currentName) && !currentName.Equals(a.Username, StringComparison.OrdinalIgnoreCase)) SaveEpicSessionSnapshot(currentName);
             ClearEpicActiveSession();
             CopyEpicSessionSnapshot(a.Username);
             StartEpicLauncher();
         }
-        catch (Exception ex) { MessageBox.Show("Could not switch Epic Games account. " + ex.Message, "Action Failed", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { MessageBox.Show("Could not switch Epic account: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
     private void SaveEpicSessionSnapshot(string accountName)
     {
@@ -359,40 +360,32 @@ public partial class MainWindow : Window
         if (File.Exists(exe)) Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true });
         else MessageBox.Show("Epic Games Launcher was not found.", "Action Failed", MessageBoxButton.OK, MessageBoxImage.Error);
     }
-    private string GetEpicSavedPath()
-    {
-        string local = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "EpicGamesLauncher", "Saved");
-        string roaming = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Epic", "EpicGamesLauncher", "Saved");
-        return Directory.Exists(local) || !Directory.Exists(roaming) ? local : roaming;
-    }
-    private string GetRiotDataPath() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Riot Games", "Riot Client", "Data");
-    private string GetSessionPath(string platform, string username) => Path.Combine(_sessionsPath, platform, string.Concat(username.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c)));
     private void SaveSessionSnapshot(Account account)
     {
-        try
-        {
-            string source = account.Platform == "Riot" ? GetRiotDataPath() : account.Platform == "Epic" ? GetEpicSavedPath() : Path.Combine(GetSteamPath(), "config");
-            if (!Directory.Exists(source)) return;
-            string target = Path.Combine(GetSessionPath(account.Platform, account.Username), account.Platform == "Riot" ? "Data" : "Saved");
-            if (Directory.Exists(target)) Directory.Delete(target, true);
-            CopyDirectory(source, target);
-        }
-        catch { }
+        if (account.Platform == "Riot") SaveRiotSessionSnapshot(account.Username);
+        else if (account.Platform == "Epic") SaveEpicSessionSnapshot(account.Username);
     }
+    private string GetSessionPath(string platform, string username) => Path.Combine(_sessionsPath, platform, SanitizeFileName(username));
+    private static string SanitizeFileName(string value)
+    {
+        foreach (char c in Path.GetInvalidFileNameChars()) value = value.Replace(c, '_');
+        return value;
+    }
+    private static void CopyDirectory(string source, string destination)
+    {
+        Directory.CreateDirectory(destination);
+        foreach (string file in Directory.GetFiles(source))
+        {
+            string target = Path.Combine(destination, Path.GetFileName(file));
+            File.Copy(file, target, true);
+        }
+        foreach (string directory in Directory.GetDirectories(source)) CopyDirectory(directory, Path.Combine(destination, Path.GetFileName(directory)));
+    }
+    private string GetRiotDataPath() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Riot Games", "Riot Client", "Data");
     private void SaveNote_Click(object sender, RoutedEventArgs e)
     {
         SaveAccountsToJson();
-        MessageBox.Show("Note saved.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-    }
-
-    private void SaveAccountsToJson()
-    {
-        try
-        {
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            File.WriteAllText(_jsonPath, JsonSerializer.Serialize(AllAccounts, options));
-        }
-        catch (Exception ex) { MessageBox.Show("Could not save accounts. " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+        MessageBox.Show("Note saved successfully!", "Willen Switcher", MessageBoxButton.OK, MessageBoxImage.Information);
     }
     private void LoadAccountsFromJson()
     {
@@ -400,15 +393,14 @@ public partial class MainWindow : Window
         {
             if (!File.Exists(_jsonPath)) return;
             var accounts = JsonSerializer.Deserialize<List<Account>>(File.ReadAllText(_jsonPath));
-            if (accounts != null) foreach (var a in accounts) AllAccounts.Add(a);
+            if (accounts != null) foreach (var account in accounts) AllAccounts.Add(account);
         }
-        catch { }
+        catch (Exception ex) { MessageBox.Show("Could not load accounts: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
-    private static void CopyDirectory(string sourceDir, string destDir)
+    private void SaveAccountsToJson()
     {
-        Directory.CreateDirectory(destDir);
-        foreach (string file in Directory.GetFiles(sourceDir)) File.Copy(file, Path.Combine(destDir, Path.GetFileName(file)), true);
-        foreach (string directory in Directory.GetDirectories(sourceDir)) CopyDirectory(directory, Path.Combine(destDir, Path.GetFileName(directory)));
+        try { File.WriteAllText(_jsonPath, JsonSerializer.Serialize(AllAccounts, new JsonSerializerOptions { WriteIndented = true })); }
+        catch (Exception ex) { MessageBox.Show("Could not save accounts: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 }
 
@@ -416,7 +408,7 @@ public class Account
 {
     public string Username { get; set; } = "";
     public string DisplayName { get; set; } = "";
-    public string Platform { get; set; } = "Steam";
+    public string Platform { get; set; } = "";
     public string Note { get; set; } = "";
     public string? AvatarPath { get; set; }
 
