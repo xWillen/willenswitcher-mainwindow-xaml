@@ -194,15 +194,15 @@ public partial class MainWindow : Window
         string username = DetectAccountName(_currentPlatform);
         if (string.IsNullOrWhiteSpace(username) && _currentPlatform.Equals("Epic", StringComparison.OrdinalIgnoreCase))
         {
-            string entered = Microsoft.VisualBasic.Interaction.InputBox("Epic's local launcher data does not reliably expose the signed-in display name. Enter the display name shown in the launcher; this labels the saved session and does not verify identity:", "Epic Account Name", "").Trim();
+            string entered = Microsoft.VisualBasic.Interaction.InputBox("Enter your Epic Games Display Name:", "Epic Account Name", "").Trim();
             if (!string.IsNullOrWhiteSpace(entered)) username = entered;
         }
         if (string.IsNullOrWhiteSpace(username) && _currentPlatform == "Riot")
         {
-            username = Microsoft.VisualBasic.Interaction.InputBox("Enter Riot ID (e.g. Name#TAG):", "Riot Account Name", "").Trim();
+            username = Microsoft.VisualBasic.Interaction.InputBox("Enter Riot ID (e.g. Name#TAG):", "Riot ID", "").Trim();
         }
-        if (string.IsNullOrWhiteSpace(username)) { MessageBox.Show("Please sign in to your " + _currentPlatform + " account first!", "Sign In Required", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (IsAlreadyAdded(_currentPlatform, username)) { MessageBox.Show("This account is already added!", "Notice", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (string.IsNullOrWhiteSpace(username)) { MessageBox.Show("Sign in to your " + _currentPlatform + " account first.", "Sign In Required", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (IsAlreadyAdded(_currentPlatform, username)) { MessageBox.Show("This account is already added.", "Already Added", MessageBoxButton.OK, MessageBoxImage.Information); return; }
         var account = new Account { Username = username, DisplayName = username, Platform = _currentPlatform, Note = "Main Account" }; if (_currentPlatform == "Steam") UpdateSteamAccountDetails(account);
         AllAccounts.Add(account); SaveSessionSnapshot(account); SaveAccountsToJson(); RefreshFilteredList();
     }
@@ -221,7 +221,7 @@ public partial class MainWindow : Window
             }
             else if (_currentPlatform == "Epic") { KillProcesses("EpicGamesLauncher", "EpicWebHelper", "UnrealCEFSubProcess"); string activeName = GetEpicAccountName(); if (!string.IsNullOrWhiteSpace(activeName)) SaveEpicSessionSnapshot(activeName); ClearEpicActiveSession(); StartEpicLauncher(); }
         }
-        catch (Exception ex) { MessageBox.Show("Could not start the login flow: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { MessageBox.Show("Could not start the login process. " + ex.Message, "Action Failed", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
     private void DeleteAccount_Click(object sender, RoutedEventArgs e) { if (sender is FrameworkElement el && el.DataContext is Account a) { AllAccounts.Remove(a); SaveAccountsToJson(); RefreshFilteredList(); } }
     private void SwitchAccount_Click(object sender, RoutedEventArgs e) { if (sender is FrameworkElement el && el.DataContext is Account a) { if (a.Platform == "Steam") SwitchSteamAccount(a.Username); else if (a.Platform == "Riot") SwitchRiotAccount(a); else if (a.Platform == "Epic") SwitchEpicAccount(a); } }
@@ -239,7 +239,7 @@ public partial class MainWindow : Window
         }
     }
     private void KillRiotProcesses() => KillProcesses("RiotClientServices", "RiotClientUx", "RiotClientUxRender", "Riot Client", "VALORANT", "LeagueClient", "LeagueClientUx");
-    private void SwitchSteamAccount(string username) { try { KillProcesses("steam"); using var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam", true); if (key != null) { key.SetValue("AutoLoginUser", username); key.SetValue("RememberPassword", 1); } Process.Start(new ProcessStartInfo("steam://open/main") { UseShellExecute = true }); } catch (Exception ex) { MessageBox.Show("Error switching account: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); } }
+    private void SwitchSteamAccount(string username) { try { KillProcesses("steam"); using var key = Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam", true); if (key != null) { key.SetValue("AutoLoginUser", username); key.SetValue("RememberPassword", 1); } Process.Start(new ProcessStartInfo("steam://open/main") { UseShellExecute = true }); } catch (Exception ex) { MessageBox.Show("Could not switch accounts. " + ex.Message, "Action Failed", MessageBoxButton.OK, MessageBoxImage.Error); } }
     private void SwitchRiotAccount(Account a)
     {
         try
@@ -252,7 +252,7 @@ public partial class MainWindow : Window
             if (Directory.Exists(from)) CopyDirectory(from, GetRiotDataPath());
             StartRiotClient(false);
         }
-        catch (Exception ex) { MessageBox.Show("Could not switch Riot account: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { MessageBox.Show("Could not switch Riot account. " + ex.Message, "Action Failed", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
     private void SaveRiotSessionSnapshot(string accountName)
     {
@@ -292,7 +292,7 @@ public partial class MainWindow : Window
         candidates.AddRange(new[] { @"C:\Riot Games\Riot Client\RiotClientServices.exe", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Riot Games", "Riot Client", "RiotClientServices.exe"), Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Riot Games", "Riot Client", "RiotClientServices.exe") });
         string? exe = candidates.FirstOrDefault(File.Exists);
         if (exe != null) Process.Start(new ProcessStartInfo(exe, "--launch-product=riot_client --launch-patchline=live") { UseShellExecute = true });
-        else MessageBox.Show("Riot Client not found.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        else MessageBox.Show("Riot Client was not found.", "Action Failed", MessageBoxButton.OK, MessageBoxImage.Error);
     }
     private void SwitchEpicAccount(Account a)
     {
@@ -305,7 +305,7 @@ public partial class MainWindow : Window
             CopyEpicSessionSnapshot(a.Username);
             StartEpicLauncher();
         }
-        catch (Exception ex) { MessageBox.Show("Could not switch Epic account: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { MessageBox.Show("Could not switch Epic Games account. " + ex.Message, "Action Failed", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
     private void SaveEpicSessionSnapshot(string accountName)
     {
@@ -356,7 +356,7 @@ public partial class MainWindow : Window
         string exe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Epic Games", "Launcher", "Portal", "Binaries", "Win32", "EpicGamesLauncher.exe");
         if (!File.Exists(exe)) exe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Epic Games", "Launcher", "Portal", "Binaries", "Win64", "EpicGamesLauncher.exe");
         if (File.Exists(exe)) Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true });
-        else MessageBox.Show("Epic Games Launcher not found.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        else MessageBox.Show("Epic Games Launcher was not found.", "Action Failed", MessageBoxButton.OK, MessageBoxImage.Error);
     }
     private string GetEpicSavedPath()
     {
@@ -381,7 +381,7 @@ public partial class MainWindow : Window
     private void SaveNote_Click(object sender, RoutedEventArgs e)
     {
         SaveAccountsToJson();
-        MessageBox.Show("Note saved successfully!", "Willen Switcher", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show("Note saved.", "Willen Switcher", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void SaveAccountsToJson()
@@ -391,7 +391,7 @@ public partial class MainWindow : Window
             var options = new JsonSerializerOptions { WriteIndented = true };
             File.WriteAllText(_jsonPath, JsonSerializer.Serialize(AllAccounts, options));
         }
-        catch (Exception ex) { MessageBox.Show("Could not save accounts: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+        catch (Exception ex) { MessageBox.Show("Could not save accounts. " + ex.Message, "Action Failed", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
     private void LoadAccountsFromJson()
     {
