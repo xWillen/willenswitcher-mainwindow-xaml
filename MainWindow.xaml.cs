@@ -150,11 +150,12 @@ public partial class MainWindow : Window
             try { files.AddRange(Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories).Where(f => new[] { ".log", ".ini", ".json" }.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))); }
             catch (IOException) { } catch (UnauthorizedAccessException) { }
         }
-        var patterns = new[] {
-            @"""(?:DisplayName|display_name|displayName)""s*:s*""(?<name>[^""]{1,64})""",
-            @"(?:DisplayName|display_name|displayName|EpicAccountName)s*[:=]s*[""']?(?<name>[^\r\n,""']{1,64})",
-            @"(?i)(?:loggeds+ins+as|signeds+ins+as|users+name)s*[:=]?s*[""']?(?<name>[^\r\n,""']{1,64})",
-            @"Users+[0-9a-f]{32}s*((?<name>[^)\r\n]{1,64}))s*signeds+in"
+        var patterns = new[]
+        {
+            @"""(?:DisplayName|display_name|displayName)""\s*:\s*""(?<name>[^\r\n,""']{1,64})""",
+            @"(?:DisplayName|display_name|displayName|EpicAccountName)\s*[:=]\s*[""']?(?<name>[^\r\n,""']{1,64})",
+            @"(?i)(?:logged\s+in\s+as|signed\s+in\s+as|user\s+name|display\s*name)\s*[:=]?\s*[""']?(?<name>[^\r\n,""']{1,64})",
+            @"User\s+[0-9a-fA-F]{32}\s+\((?<name>[^\r\n,""']{1,64})\)\s+signed\s*in"
         };
         foreach (string path in files.Distinct(StringComparer.OrdinalIgnoreCase).OrderByDescending(SafeLastWriteTimeUtc))
         {
