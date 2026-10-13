@@ -243,8 +243,10 @@
             </ListBox>
         </Grid>
 
-        <Grid x:Name="CustomDialogOverlay" Panel.ZIndex="100" Visibility="Collapsed" Background="#80000000">
-            <Border Background="#161922" BorderBrush="#232733" BorderThickness="1" CornerRadius="10"
+        <Grid x:Name="CustomDialogOverlay" Grid.Column="0" Grid.ColumnSpan="2"
+              Panel.ZIndex="100" Visibility="Collapsed" Background="Transparent"
+              HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <Border Background="#161922" BorderBrush="#232733" BorderThickness="1" CornerRadius="8"
                     Width="380" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20">
                 <StackPanel>
                     <TextBlock x:Name="DialogTitleText" Text="Title" Foreground="#FFFFFF" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
