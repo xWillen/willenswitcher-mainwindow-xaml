@@ -463,9 +463,14 @@ public partial class MainWindow : Window
     private string GetEpicWebCachePath() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "EpicGamesLauncher", "Saved", "webcache");
     private string GetEpicProfileFolderName(string source) => Path.GetFileName(source);
     private string GetEpicProfileDirectoryForFolder(string folder) => Path.Combine(GetEpicProfilesPath(), folder);
-    private string GetRiotDataPath() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalAppData), "Riot Games", "Riot Client", "Data");
+    private string GetRiotDataPath() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Riot Games", "Riot Client", "Data");
     private string GetSessionPath(string platform, string accountName) => Path.Combine(_sessionsPath, platform, SafeFolderName(accountName));
     private string SafeFolderName(string value) { foreach (char c in Path.GetInvalidFileNameChars()) value = value.Replace(c, '_'); return value; }
+    private void SaveSessionSnapshot(Account account)
+    {
+        if (account.Platform == "Riot") SaveRiotSessionSnapshot(account.Username);
+        else if (account.Platform == "Epic") SaveEpicSessionSnapshot(account.Username);
+    }
     private void CopyDirectory(string sourceDir, string destinationDir)
     {
         Directory.CreateDirectory(destinationDir);
