@@ -155,7 +155,9 @@ public partial class MainWindow : Window
             @"""(?:DisplayName|display_name|displayName)""\s*:\s*""(?<name>[^\r\n,""']{1,64})""",
             @"(?:DisplayName|display_name|displayName|EpicAccountName)\s*[:=]\s*[""']?(?<name>[^\r\n,""']{1,64})",
             @"(?i)(?:logged\s+in\s+as|signed\s+in\s+as|user\s+name|display\s*name)\s*[:=]?\s*[""']?(?<name>[^\r\n,""']{1,64})",
-            @"User\s+[0-9a-fA-F]{32}\s+\((?<name>[^\r\n,""']{1,64})\)\s+signed\s*in"
+            @"User\s+[0-9a-fA-F]{32}\s+\((?<name>[^\r\n,""']{1,64})\)\s+signed\s*in",
+            @"UserId\s+[0-9a-fA-F]+\s+has\s+display\s+name\s+'(?<name>[^'\r\n]{1,64})'",
+            @"DisplayName\s*\[(?<name>[^\]\r\n]{1,64})\]"
         };
         foreach (string path in files.Distinct(StringComparer.OrdinalIgnoreCase).OrderByDescending(SafeLastWriteTimeUtc))
         {
@@ -171,7 +173,7 @@ public partial class MainWindow : Window
     private static bool LooksLikeEpicIdentifier(string value) => value.Length >= 32 && value.All(c => Uri.IsHexDigit(c) || c == '-');
     private static string ReadFileShared(string path) { using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete); using var reader = new StreamReader(stream); return reader.ReadToEnd(); }
     private static DateTime SafeLastWriteTimeUtc(string path) { try { return File.GetLastWriteTimeUtc(path); } catch { return DateTime.MinValue; } }
-    private static bool Plausible(string? value) => !string.IsNullOrWhiteSpace(value) && value.Trim().Length <= 64 && !value.Contains("token", StringComparison.OrdinalIgnoreCase) && !value.Contains("puuid", StringComparison.OrdinalIgnoreCase) && !value.Contains("unknown", StringComparison.OrdinalIgnoreCase);
+    private static bool Plausible(string? value) => !string.IsNullOrWhiteSpace(value) && value.Trim().Length <= 64 && !value.Contains("token", StringComparison.OrdinalIgnoreCase) && !value.Contains("puuid", StringComparison.OrdinalIgnoreCase) && !value.Contains("unknown", StringComparison.OrdinalIgnoreCase) && !value.Contains("not set", StringComparison.OrdinalIgnoreCase);
     private static string? MatchNamedValue(string text, string pattern) { var m = Regex.Match(text, pattern); return m.Success ? m.Groups[1].Value.Trim().Trim('"', '\'') : null; }
 
     private bool IsAlreadyAdded(string platform, string username) => AllAccounts.Any(a => a.Platform.Equals(platform, StringComparison.OrdinalIgnoreCase) && a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
@@ -375,52 +377,4 @@ public partial class MainWindow : Window
         try
         {
             var options = new JsonSerializerOptions { WriteIndented = true };
-            File.WriteAllText(_jsonPath, JsonSerializer.Serialize(AllAccounts, options));
-        }
-        catch (Exception ex) { MessageBox.Show("Could not save accounts: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
-    }
-    private void LoadAccountsFromJson()
-    {
-        try
-        {
-            if (!File.Exists(_jsonPath)) return;
-            var accounts = JsonSerializer.Deserialize<List<Account>>(File.ReadAllText(_jsonPath));
-            if (accounts != null) foreach (var a in accounts) AllAccounts.Add(a);
-        }
-        catch { }
-    }
-    private static void CopyDirectory(string sourceDir, string destDir)
-    {
-        Directory.CreateDirectory(destDir);
-        foreach (string file in Directory.GetFiles(sourceDir)) File.Copy(file, Path.Combine(destDir, Path.GetFileName(file)), true);
-        foreach (string directory in Directory.GetDirectories(sourceDir)) CopyDirectory(directory, Path.Combine(destDir, Path.GetFileName(directory)));
-    }
-}
-
-public class Account
-{
-    public string Username { get; set; } = "";
-    public string DisplayName { get; set; } = "";
-    public string Platform { get; set; } = "Steam";
-    public string Note { get; set; } = "";
-    public string? AvatarPath { get; set; }
-
-    [JsonIgnore]
-    public ImageSource AvatarSource
-    {
-        get
-        {
-            try
-            {
-                if (!string.IsNullOrWhiteSpace(AvatarPath))
-                {
-                    if (Uri.TryCreate(AvatarPath, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)) return new BitmapImage(uri);
-                    if (File.Exists(AvatarPath)) { var image = new BitmapImage(); image.BeginInit(); image.UriSource = new Uri(AvatarPath, UriKind.Absolute); image.CacheOption = BitmapCacheOption.OnLoad; image.EndInit(); image.Freeze(); return image; }
-                }
-            }
-            catch { }
-            string asset = Platform switch { "Steam" => "/Assets/steam.png", "Riot" => "/Assets/riot.png", "Epic" => "/Assets/epic.png", _ => "/Assets/steam.png" };
-            return new BitmapImage(new Uri("pack://application:,,," + asset, UriKind.Absolute));
-        }
-    }
-}
+            File.
