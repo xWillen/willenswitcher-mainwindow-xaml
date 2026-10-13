@@ -389,4 +389,52 @@ public partial class MainWindow : Window
         try
         {
             var options = new JsonSerializerOptions { WriteIndented = true };
-            File.
+            File.WriteAllText(_jsonPath, JsonSerializer.Serialize(AllAccounts, options));
+        }
+        catch (Exception ex) { MessageBox.Show("Could not save accounts: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
+    private void LoadAccountsFromJson()
+    {
+        try
+        {
+            if (!File.Exists(_jsonPath)) return;
+            var accounts = JsonSerializer.Deserialize<List<Account>>(File.ReadAllText(_jsonPath));
+            if (accounts != null) foreach (var a in accounts) AllAccounts.Add(a);
+        }
+        catch { }
+    }
+    private static void CopyDirectory(string sourceDir, string destDir)
+    {
+        Directory.CreateDirectory(destDir);
+        foreach (string file in Directory.GetFiles(sourceDir)) File.Copy(file, Path.Combine(destDir, Path.GetFileName(file)), true);
+        foreach (string directory in Directory.GetDirectories(sourceDir)) CopyDirectory(directory, Path.Combine(destDir, Path.GetFileName(directory)));
+    }
+}
+
+public class Account
+{
+    public string Username { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public string Platform { get; set; } = "Steam";
+    public string Note { get; set; } = "";
+    public string? AvatarPath { get; set; }
+
+    [JsonIgnore]
+    public ImageSource AvatarSource
+    {
+        get
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(AvatarPath))
+                {
+                    if (Uri.TryCreate(AvatarPath, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)) return new BitmapImage(uri);
+                    if (File.Exists(AvatarPath)) { var image = new BitmapImage(); image.BeginInit(); image.UriSource = new Uri(AvatarPath, UriKind.Absolute); image.CacheOption = BitmapCacheOption.OnLoad; image.EndInit(); image.Freeze(); return image; }
+                }
+            }
+            catch { }
+            string asset = Platform switch { "Steam" => "/Assets/steam.png", "Riot" => "/Assets/riot.png", "Epic" => "/Assets/epic.png", _ => "/Assets/steam.png" };
+            return new BitmapImage(new Uri("pack://application:,,," + asset, UriKind.Absolute));
+        }
+    }
+}
