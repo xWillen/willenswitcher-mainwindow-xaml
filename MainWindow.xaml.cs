@@ -145,7 +145,12 @@ public partial class MainWindow : Window
     private string GetEpicAccountName()
     {
         var files = new List<string>();
-        foreach (string root in GetEpicProfileDirectories().Where(Directory.Exists))
+        var roots = GetEpicProfileDirectories().Concat(new[]
+        {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "EpicGamesLauncher"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Epic", "EpicGamesLauncher")
+        }).Distinct(StringComparer.OrdinalIgnoreCase);
+        foreach (string root in roots.Where(Directory.Exists))
         {
             try { files.AddRange(Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories).Where(f => new[] { ".log", ".ini", ".json" }.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase))); }
             catch (IOException) { } catch (UnauthorizedAccessException) { }
@@ -157,7 +162,8 @@ public partial class MainWindow : Window
             @"(?i)(?:logged\s+in\s+as|signed\s+in\s+as|user\s+name|display\s*name)\s*[:=]?\s*[""']?(?<name>[^\r\n,""']{1,64})",
             @"User\s+[0-9a-fA-F]{32}\s+\((?<name>[^\r\n,""']{1,64})\)\s+signed\s*in",
             @"UserId\s+[0-9a-fA-F]+\s+has\s+display\s+name\s+'(?<name>[^'\r\n]{1,64})'",
-            @"DisplayName\s*\[(?<name>[^\]\r\n]{1,64})\]"
+            @"DisplayName\s*\[(?<name>[^\]\r\n]{1,64})\]",
+            @"(?i)(?:logged\s+in\s+as|signed\s+in\s+as)\s+\[(?<name>[^\]\r\n]{1,64})\]"
         };
         foreach (string path in files.Distinct(StringComparer.OrdinalIgnoreCase).OrderByDescending(SafeLastWriteTimeUtc))
         {
@@ -165,7 +171,13 @@ public partial class MainWindow : Window
             foreach (string pattern in patterns)
             {
                 var matches = Regex.Matches(text, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-                for (int i = matches.Count - 1; i >= 0; i--) { string name = matches[i].Groups["name"].Value.Trim(); if (Plausible(name) && !LooksLikeEpicIdentifier(name)) return name; }
+                for (int i = matches.Count - 1; i >= 0; i--)
+                {
+                    string name = matches[i].Groups["name"].Value.Trim().Trim('"', '\'').Trim('[', ']').TrimEnd('!', '.', ',', ';');
+                    if (name.Contains(':')) name = name.Substring(name.IndexOf(':') + 1).Trim();
+                    if (name.Equals("is not set", StringComparison.OrdinalIgnoreCase) || name.Contains("not set", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (Plausible(name) && !LooksLikeEpicIdentifier(name)) return name;
+                }
             }
         }
         return "";
@@ -173,7 +185,7 @@ public partial class MainWindow : Window
     private static bool LooksLikeEpicIdentifier(string value) => value.Length >= 32 && value.All(c => Uri.IsHexDigit(c) || c == '-');
     private static string ReadFileShared(string path) { using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete); using var reader = new StreamReader(stream); return reader.ReadToEnd(); }
     private static DateTime SafeLastWriteTimeUtc(string path) { try { return File.GetLastWriteTimeUtc(path); } catch { return DateTime.MinValue; } }
-    private static bool Plausible(string? value) => !string.IsNullOrWhiteSpace(value) && value.Trim().Length <= 64 && !value.Contains("token", StringComparison.OrdinalIgnoreCase) && !value.Contains("puuid", StringComparison.OrdinalIgnoreCase) && !value.Contains("unknown", StringComparison.OrdinalIgnoreCase) && !value.Contains("not set", StringComparison.OrdinalIgnoreCase);
+    private static bool Plausible(string? value) => !string.IsNullOrWhiteSpace(value) && value.Trim().Length <= 64 && !value.Contains("token", StringComparison.OrdinalIgnoreCase) && !value.Contains("puuid", StringComparison.OrdinalIgnoreCase) && !value.Contains("unknown", StringComparison.OrdinalIgnoreCase) && !value.Contains("not set", StringComparison.OrdinalIgnoreCase) && !value.Contains("not_set", StringComparison.OrdinalIgnoreCase) && !value.Contains("none", StringComparison.OrdinalIgnoreCase) && !value.Contains("null", StringComparison.OrdinalIgnoreCase) && !value.StartsWith("is not", StringComparison.OrdinalIgnoreCase);
     private static string? MatchNamedValue(string text, string pattern) { var m = Regex.Match(text, pattern); return m.Success ? m.Groups[1].Value.Trim().Trim('"', '\'') : null; }
 
     private bool IsAlreadyAdded(string platform, string username) => AllAccounts.Any(a => a.Platform.Equals(platform, StringComparison.OrdinalIgnoreCase) && a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
