@@ -232,6 +232,11 @@ public partial class MainWindow : Window
     private async void AddAccount_Click(object sender, RoutedEventArgs e)
     {
         string username = DetectAccountName(_currentPlatform);
+        if (_currentPlatform.Equals("Epic", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(username) && IsAlreadyAdded(_currentPlatform, username))
+        {
+            await ShowCustomMessageAsync("Account Exists", "This account is already added!");
+            return;
+        }
         if (string.IsNullOrWhiteSpace(username) && _currentPlatform.Equals("Epic", StringComparison.OrdinalIgnoreCase))
         {
             string? entered = await ShowCustomInputDialogAsync("Epic Account Name", "Enter your Epic Games Display Name:");
@@ -390,59 +395,35 @@ public partial class MainWindow : Window
         return new[] { local, roaming }.Distinct(StringComparer.OrdinalIgnoreCase);
     }
     private string GetEpicProfileFolderName(string path) => Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-    private string GetEpicProfileDirectoryForFolder(string folder)
+    private string GetEpicProfileDirectoryForFolder(string folderName)
     {
-        string? match = GetEpicProfileDirectories().FirstOrDefault(p => GetEpicProfileFolderName(p).Equals(folder, StringComparison.OrdinalIgnoreCase));
-        return match ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "EpicGamesLauncher", "Saved", folder);
+        foreach (string path in GetEpicProfileDirectories())
+            if (GetEpicProfileFolderName(path).Equals(folderName, StringComparison.OrdinalIgnoreCase)) return path;
+        return Path.Combine(GetEpicProfileDirectories().First(), folderName);
     }
-    private void StartEpicLauncher()
-    {
-        string exe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Epic Games", "Launcher", "Portal", "Binaries", "Win32", "EpicGamesLauncher.exe");
-        if (!File.Exists(exe)) exe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Epic Games", "Launcher", "Portal", "Binaries", "Win64", "EpicGamesLauncher.exe");
-        if (File.Exists(exe)) Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true });
-        else MessageBox.Show("Epic Games Launcher was not found.", "Action Failed", MessageBoxButton.OK, MessageBoxImage.Error);
-    }
+    private string GetRiotDataPath() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Riot Games", "Riot Client", "Data");
+    private string GetSessionPath(string platform, string accountName) => Path.Combine(_sessionsPath, platform, SanitizeFileName(accountName));
+    private static string SanitizeFileName(string value) { foreach (char c in Path.GetInvalidFileNameChars()) value = value.Replace(c, '_'); return value; }
     private void SaveSessionSnapshot(Account account)
     {
         if (account.Platform == "Riot") SaveRiotSessionSnapshot(account.Username);
         else if (account.Platform == "Epic") SaveEpicSessionSnapshot(account.Username);
     }
-    private string GetSessionPath(string platform, string username) => Path.Combine(_sessionsPath, platform, SanitizeFileName(username));
-    private static string SanitizeFileName(string value)
-    {
-        foreach (char c in Path.GetInvalidFileNameChars()) value = value.Replace(c, '_');
-        return value;
-    }
-    private static void CopyDirectory(string source, string destination)
-    {
-        Directory.CreateDirectory(destination);
-        foreach (string file in Directory.GetFiles(source))
-        {
-            string target = Path.Combine(destination, Path.GetFileName(file));
-            File.Copy(file, target, true);
-        }
-        foreach (string directory in Directory.GetDirectories(source)) CopyDirectory(directory, Path.Combine(destination, Path.GetFileName(directory)));
-    }
-    private string GetRiotDataPath() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Riot Games", "Riot Client", "Data");
-    private void SaveNote_Click(object sender, RoutedEventArgs e)
-    {
-        SaveAccountsToJson();
-        MessageBox.Show("Note saved successfully!", "Willen Switcher", MessageBoxButton.OK, MessageBoxImage.Information);
-    }
-    private void LoadAccountsFromJson()
-    {
-        try
-        {
-            if (!File.Exists(_jsonPath)) return;
-            var accounts = JsonSerializer.Deserialize<List<Account>>(File.ReadAllText(_jsonPath));
-            if (accounts != null) foreach (var account in accounts) AllAccounts.Add(account);
-        }
-        catch (Exception ex) { MessageBox.Show("Could not load accounts: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
-    }
     private void SaveAccountsToJson()
     {
         try { File.WriteAllText(_jsonPath, JsonSerializer.Serialize(AllAccounts, new JsonSerializerOptions { WriteIndented = true })); }
         catch (Exception ex) { MessageBox.Show("Could not save accounts: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
+    private void LoadAccountsFromJson()
+    {
+        try { if (File.Exists(_jsonPath)) { var accounts = JsonSerializer.Deserialize<ObservableCollection<Account>>(File.ReadAllText(_jsonPath)); if (accounts != null) foreach (var account in accounts) AllAccounts.Add(account); } }
+        catch (Exception ex) { MessageBox.Show("Could not load accounts: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
+    private void CopyDirectory(string sourceDir, string destinationDir)
+    {
+        Directory.CreateDirectory(destinationDir);
+        foreach (string file in Directory.GetFiles(sourceDir)) File.Copy(file, Path.Combine(destinationDir, Path.GetFileName(file)), true);
+        foreach (string directory in Directory.GetDirectories(sourceDir)) CopyDirectory(directory, Path.Combine(destinationDir, Path.GetFileName(directory)));
     }
 }
 
@@ -453,23 +434,4 @@ public class Account
     public string Platform { get; set; } = "";
     public string Note { get; set; } = "";
     public string? AvatarPath { get; set; }
-
-    [JsonIgnore]
-    public ImageSource AvatarSource
-    {
-        get
-        {
-            try
-            {
-                if (!string.IsNullOrWhiteSpace(AvatarPath))
-                {
-                    if (Uri.TryCreate(AvatarPath, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)) return new BitmapImage(uri);
-                    if (File.Exists(AvatarPath)) { var image = new BitmapImage(); image.BeginInit(); image.UriSource = new Uri(AvatarPath, UriKind.Absolute); image.CacheOption = BitmapCacheOption.OnLoad; image.EndInit(); image.Freeze(); return image; }
-                }
-            }
-            catch { }
-            string asset = Platform switch { "Steam" => "/Assets/steam.png", "Riot" => "/Assets/riot.png", "Epic" => "/Assets/epic.png", _ => "/Assets/steam.png" };
-            return new BitmapImage(new Uri("pack://application:,,," + asset, UriKind.Absolute));
-        }
-    }
 }
