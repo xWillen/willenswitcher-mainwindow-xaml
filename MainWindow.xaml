@@ -242,5 +242,23 @@
                 </ListBox.ItemTemplate>
             </ListBox>
         </Grid>
+
+        <Grid x:Name="CustomDialogOverlay" Panel.ZIndex="100" Visibility="Collapsed" Background="#80000000">
+            <Border Background="#161922" BorderBrush="#232733" BorderThickness="1" CornerRadius="10"
+                    Width="380" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20">
+                <StackPanel>
+                    <TextBlock x:Name="DialogTitleText" Text="Title" Foreground="#FFFFFF" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <TextBlock x:Name="DialogMessageText" Text="Message" Foreground="#9299AA" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,15"/>
+                    <TextBox x:Name="DialogInputBox" Background="#0F1117" BorderBrush="#232733" Foreground="#FFFFFF"
+                             CaretBrush="#7C5CFC" Padding="8,6" FontSize="13" Margin="0,0,0,20"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="DialogCancelButton" Content="Cancel" Click="DialogCancelButton_Click"
+                                Background="#232733" Foreground="#9299AA" BorderThickness="0" Padding="16,6" Margin="0,0,10,0" Cursor="Hand"/>
+                        <Button x:Name="DialogOkButton" Content="OK" Click="DialogOkButton_Click"
+                                Background="#7C5CFC" Foreground="#FFFFFF" BorderThickness="0" Padding="18,6" Cursor="Hand"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

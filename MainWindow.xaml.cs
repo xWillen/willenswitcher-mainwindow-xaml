@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace WillenSwitcher;
 
@@ -23,6 +24,44 @@ public partial class MainWindow : Window
     private string _currentPlatform = "Steam";
     private readonly string _jsonPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "accounts.json");
     private readonly string _sessionsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SavedSessions");
+    private TaskCompletionSource<string?>? _dialogTcs;
+
+    private Task<string?> ShowCustomInputDialogAsync(string title, string message, string defaultText = "")
+    {
+        _dialogTcs = new TaskCompletionSource<string?>();
+        DialogTitleText.Text = title;
+        DialogMessageText.Text = message;
+        DialogInputBox.Text = defaultText;
+        DialogInputBox.Visibility = Visibility.Visible;
+        DialogCancelButton.Visibility = Visibility.Visible;
+        CustomDialogOverlay.Visibility = Visibility.Visible;
+        DialogInputBox.Focus();
+        DialogInputBox.SelectAll();
+        return _dialogTcs.Task;
+    }
+
+    private void DialogOkButton_Click(object sender, RoutedEventArgs e)
+    {
+        CustomDialogOverlay.Visibility = Visibility.Collapsed;
+        _dialogTcs?.TrySetResult(DialogInputBox.Visibility == Visibility.Visible ? DialogInputBox.Text : string.Empty);
+    }
+
+    private void DialogCancelButton_Click(object sender, RoutedEventArgs e)
+    {
+        CustomDialogOverlay.Visibility = Visibility.Collapsed;
+        _dialogTcs?.TrySetResult(null);
+    }
+
+    private Task ShowCustomMessageAsync(string title, string message)
+    {
+        _dialogTcs = new TaskCompletionSource<string?>();
+        DialogTitleText.Text = title;
+        DialogMessageText.Text = message;
+        DialogInputBox.Visibility = Visibility.Collapsed;
+        DialogCancelButton.Visibility = Visibility.Collapsed;
+        CustomDialogOverlay.Visibility = Visibility.Visible;
+        return _dialogTcs.Task;
+    }
 
     public MainWindow()
     {
@@ -190,20 +229,23 @@ public partial class MainWindow : Window
     private static string? MatchNamedValue(string text, string pattern) { var m = Regex.Match(text, pattern); return m.Success ? m.Groups[1].Value.Trim().Trim('"', '\'') : null; }
 
     private bool IsAlreadyAdded(string platform, string username) => AllAccounts.Any(a => a.Platform.Equals(platform, StringComparison.OrdinalIgnoreCase) && a.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
-    private void AddAccount_Click(object sender, RoutedEventArgs e)
+    private async void AddAccount_Click(object sender, RoutedEventArgs e)
     {
         string username = DetectAccountName(_currentPlatform);
         if (string.IsNullOrWhiteSpace(username) && _currentPlatform.Equals("Epic", StringComparison.OrdinalIgnoreCase))
         {
-            string entered = Microsoft.VisualBasic.Interaction.InputBox("Enter your Epic Games Display Name:", "Epic Account Name", "").Trim();
-            if (!string.IsNullOrWhiteSpace(entered)) username = entered;
+            string? entered = await ShowCustomInputDialogAsync("Epic Account Name", "Enter your Epic Games Display Name:");
+            if (entered == null) return;
+            username = entered.Trim();
         }
         if (string.IsNullOrWhiteSpace(username) && _currentPlatform == "Riot")
         {
-            username = Microsoft.VisualBasic.Interaction.InputBox("Enter Riot ID (e.g. Name#TAG):", "Riot ID", "").Trim();
+            string? entered = await ShowCustomInputDialogAsync("Riot ID", "Enter Riot ID (e.g. Name#TAG):");
+            if (entered == null) return;
+            username = entered.Trim();
         }
-        if (string.IsNullOrWhiteSpace(username)) { MessageBox.Show("Sign in to your " + _currentPlatform + " account first.", "Sign In Required", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        if (IsAlreadyAdded(_currentPlatform, username)) { MessageBox.Show("This account is already added.", "Already Added", MessageBoxButton.OK, MessageBoxImage.Information); return; }
+        if (string.IsNullOrWhiteSpace(username)) { await ShowCustomMessageAsync("Sign In Required", "Sign in to your " + _currentPlatform + " account first."); return; }
+        if (IsAlreadyAdded(_currentPlatform, username)) { await ShowCustomMessageAsync("Already Added", "This account is already added."); return; }
         var account = new Account { Username = username, DisplayName = username, Platform = _currentPlatform, Note = "Main Account" }; if (_currentPlatform == "Steam") UpdateSteamAccountDetails(account);
         AllAccounts.Add(account); SaveSessionSnapshot(account); SaveAccountsToJson(); RefreshFilteredList();
     }
