@@ -154,14 +154,14 @@ public partial class MainWindow : Window
             {
                 string text;
                 try { text = ReadFileShared(path); } catch { continue; }
-                string? gameName = MatchNamedValue(text, @"""game_name""\s*:\s*""([^""]+)""") ?? MatchNamedValue(text, @"(?im)game_name:\s*""?([^""\r\n]+)");
-                string? tagLine = MatchNamedValue(text, @"""tag_line""\s*:\s*""([^""]+)""") ?? MatchNamedValue(text, @"(?im)tag_line:\s*""?([^""\r\n]+)");
+                string? gameName = MatchNamedValue(text, "\"\"\"game_name\"\"\\s*:\\s*\"\"([^\"\"]+)\"\"") ?? MatchNamedValue(text, "(?im)game_name:\\s*\"\"?([^\"\"\\r\\n]+)");
+                string? tagLine = MatchNamedValue(text, "\"\"\"tag_line\"\"\\s*:\\s*\"\"([^\"\"]+)\"\"") ?? MatchNamedValue(text, "(?im)tag_line:\\s*\"\"?([^\"\"\\r\\n]+)");
                 if (Plausible(gameName) && Plausible(tagLine)) return gameName!.Trim() + "#" + tagLine!.Trim();
-                string? display = MatchNamedValue(text, @"(?im)displayName:\s*""?([^""\r\n]+)") ?? MatchNamedValue(text, @"""game_name""\s*:\s*""([^""]+)""");
+                string? display = MatchNamedValue(text, "(?im)displayName:\\s*\"\"?([^\"\"\\r\\n]+)") ?? MatchNamedValue(text, "\"\"\"game_name\"\"\\s*:\\s*\"\"([^\"\"]+)\"\"");
                 if (Plausible(display)) return display!.Trim();
                 if (path.Contains(Path.DirectorySeparatorChar + "Logs" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                 {
-                    string? logged = MatchNamedValue(text, @"(?im)display name update received:\s*([^\r\n,]+)") ?? MatchNamedValue(text, @"(?im)Logged in as\s+([^\r\n,]+)") ?? MatchNamedValue(text, @"(?im)Riot ID:\s*([^\r\n,]+)") ?? MatchNamedValue(text, @"(?im)Player\s+([^\r\n#]+#[A-Za-z0-9]+)");
+                    string? logged = MatchNamedValue(text, "(?im)display name update received:\\s*([^\\r\\n,]+)") ?? MatchNamedValue(text, "(?im)Logged in as\\s+([^\\r\\n,]+)") ?? MatchNamedValue(text, "(?im)Riot ID:\\s*([^\\r\\n,]+)") ?? MatchNamedValue(text, "(?im)Player\\s+([^\\r\\n#]+#[A-Za-z0-9]+)");
                     if (Plausible(logged)) return CleanRiotDisplayName(logged!);
                 }
             }
@@ -197,13 +197,13 @@ public partial class MainWindow : Window
         }
         var patterns = new[]
         {
-            @"""(?:DisplayName|display_name|displayName)""\s*:\s*""(?<name>[^\r\n,""']{1,64})""",
-            @"(?:DisplayName|display_name|displayName|EpicAccountName)\s*[:=]\s*[""']?(?<name>[^\r\n,""']{1,64})",
-            @"(?i)(?:logged\s+in\s+as|signed\s+in\s+as|user\s+name|display\s*name)\s*[:=]?\s*[""']?(?<name>[^\r\n,""']{1,64})",
-            @"User\s+[0-9a-fA-F]{32}\s+\((?<name>[^\r\n,""']{1,64})\)\s+signed\s*in",
-            @"UserId\s+[0-9a-fA-F]+\s+has\s+display\s+name\s+'(?<name>[^'\r\n]{1,64})'",
-            @"DisplayName\s*\[(?<name>[^\]\r\n]{1,64})\]",
-            @"(?i)(?:logged\s+in\s+as|signed\s+in\s+as)\s+\[(?<name>[^\]\r\n]{1,64})\]"
+            "\"\"\"(?:DisplayName|display_name|displayName)\"\"\\s*:\\s*\"\"(?<name>[^\\r\\n,\"\"']{1,64})\"\"",
+            "(?:DisplayName|display_name|displayName|EpicAccountName)\\s*[:=]\\s*[\"\"']?(?<name>[^\\r\\n,\"\"']{1,64})",
+            "(?i)(?:logged\\s+in\\s+as|signed\\s+in\\s+as|user\\s+name|display\\s*name)\\s*[:=]?\\s*[\"\"']?(?<name>[^\\r\\n,\"\"']{1,64})",
+            "User\\s+[0-9a-fA-F]{32}\\s+\\((?<name>[^\\r\\n,\"\"']{1,64})\\)\\s+signed\\s*in",
+            "UserId\\s+[0-9a-fA-F]+\\s+has\\s+display\\s+name\\s+'(?<name>[^'\\r\\n]{1,64})'",
+            "DisplayName\\s*\\[(?<name>[^\\]\\r\\n]{1,64})\\]",
+            "(?i)(?:logged\\s+in\\s+as|signed\\s+in\\s+as)\\s+\\[(?<name>[^\\]\\r\\n]{1,64})\\]"
         };
         foreach (string path in files.Distinct(StringComparer.OrdinalIgnoreCase).OrderByDescending(SafeLastWriteTimeUtc))
         {
@@ -395,19 +395,35 @@ public partial class MainWindow : Window
         return new[] { local, roaming }.Distinct(StringComparer.OrdinalIgnoreCase);
     }
     private string GetEpicProfileFolderName(string path) => Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-    private string GetEpicProfileDirectoryForFolder(string folderName)
+    private string GetEpicProfileDirectoryForFolder(string folder)
     {
-        foreach (string path in GetEpicProfileDirectories())
-            if (GetEpicProfileFolderName(path).Equals(folderName, StringComparison.OrdinalIgnoreCase)) return path;
-        return Path.Combine(GetEpicProfileDirectories().First(), folderName);
+        string? match = GetEpicProfileDirectories().FirstOrDefault(p => GetEpicProfileFolderName(p).Equals(folder, StringComparison.OrdinalIgnoreCase));
+        return match ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "EpicGamesLauncher", "Saved", folder);
     }
-    private string GetRiotDataPath() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Riot Games", "Riot Client", "Data");
+    private void StartEpicLauncher()
+    {
+        string exe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Epic Games", "Launcher", "Portal", "Binaries", "Win32", "EpicGamesLauncher.exe");
+        if (!File.Exists(exe)) exe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Epic Games", "Launcher", "Portal", "Binaries", "Win64", "EpicGamesLauncher.exe");
+        if (File.Exists(exe)) Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true });
+        else MessageBox.Show("Epic Games Launcher not found.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+    }
+    private string GetRiotDataPath()
+    {
+        string local = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Riot Games", "Riot Client", "Data");
+        string programData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Riot Games", "Riot Client", "Data");
+        return Directory.Exists(local) || !Directory.Exists(programData) ? local : programData;
+    }
     private string GetSessionPath(string platform, string accountName) => Path.Combine(_sessionsPath, platform, SanitizeFileName(accountName));
     private static string SanitizeFileName(string value) { foreach (char c in Path.GetInvalidFileNameChars()) value = value.Replace(c, '_'); return value; }
     private void SaveSessionSnapshot(Account account)
     {
         if (account.Platform == "Riot") SaveRiotSessionSnapshot(account.Username);
         else if (account.Platform == "Epic") SaveEpicSessionSnapshot(account.Username);
+    }
+    private void SaveNote_Click(object sender, RoutedEventArgs e)
+    {
+        SaveAccountsToJson();
+        MessageBox.Show("Note saved successfully!", "Willen Switcher", MessageBoxButton.OK, MessageBoxImage.Information);
     }
     private void SaveAccountsToJson()
     {
