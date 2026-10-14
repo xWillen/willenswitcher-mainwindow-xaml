@@ -66,8 +66,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}"
-                                CornerRadius="8" Padding="{TemplateBinding Padding}">
+                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
                             <ContentPresenter VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
@@ -92,8 +91,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}"
-                                CornerRadius="7" Padding="{TemplateBinding Padding}">
+                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" CornerRadius="7" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
@@ -189,7 +187,7 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <StackPanel Grid.Row="0" Margin="22,24,18,0">
-                <TextBlock Text="Account Switcher" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextWhite}" />
+                <TextBlock Text="Raghad Switcher" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextWhite}" />
                 <TextBlock Text="Account Manager" FontSize="12" Foreground="{StaticResource MutedBrush}" Margin="0,5,0,0" />
             </StackPanel>
             <StackPanel Grid.Row="1" Margin="12,38,12,0">
