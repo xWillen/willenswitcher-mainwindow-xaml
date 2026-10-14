@@ -13,11 +13,11 @@
         ResizeMode="CanResize"
         Background="Transparent">
     <Window.Resources>
-        <SolidColorBrush x:Key="PanelBrush" Color="#161922" />
+        <SolidColorBrush x:Key="PanelBrush" Color="#66161922" />
         <SolidColorBrush x:Key="MutedBrush" Color="#9299AA" />
         <SolidColorBrush x:Key="AccentBrush" Color="#7C5CFC" />
         <SolidColorBrush x:Key="TextWhite" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="BorderBrush" Color="#232733" />
+        <SolidColorBrush x:Key="BorderBrush" Color="#66303544" />
         <SolidColorBrush x:Key="DangerBrush" Color="#F87171" />
         <SolidColorBrush x:Key="NoteBorderBrush" Color="#303544" />
         <SolidColorBrush x:Key="NoteFocusBorderBrush" Color="#7C5CFC" />
@@ -84,7 +84,7 @@
         </Style>
         <Style x:Key="ActionButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="{StaticResource TextWhite}" />
-            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+            <Setter Property="Background" Value="#667C5CFC" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="14,9" />
             <Setter Property="FontWeight" Value="SemiBold" />
@@ -111,15 +111,16 @@
         <Style x:Key="CardActionButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
             <Setter Property="Padding" Value="12,7" />
             <Setter Property="FontSize" Value="12" />
+            <Setter Property="Background" Value="#55343B50" />
         </Style>
         <Style x:Key="NoteSaveButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
             <Setter Property="Padding" Value="12,7" />
             <Setter Property="FontSize" Value="12" />
             <Setter Property="MinWidth" Value="88" />
-            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+            <Setter Property="Background" Value="#667C5CFC" />
         </Style>
         <Style x:Key="DeleteButtonStyle" TargetType="Button" BasedOn="{StaticResource CardActionButtonStyle}">
-            <Setter Property="Background" Value="#392027" />
+            <Setter Property="Background" Value="#66392027" />
             <Setter Property="Foreground" Value="{StaticResource DangerBrush}" />
         </Style>
         <Style x:Key="NoteTextBoxStyle" TargetType="TextBox">
@@ -194,13 +195,13 @@
             <StackPanel Grid.Row="1" Margin="12,38,12,0">
                 <Button Tag="Steam" Click="PlatformNav_Click" Style="{StaticResource NavButtonStyle}">
                     <StackPanel Orientation="Horizontal">
-                        <Image Source="/Assets/steam.png" Width="18" Height="18" Margin="0,0,12,0" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
+                        <Image Source="/Assets/steam.png" Width="30" Height="30" Margin="0,0,12,0" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
                         <TextBlock Text="Steam" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
                 <Button Tag="Riot" Click="PlatformNav_Click" Style="{StaticResource NavButtonStyle}">
                     <StackPanel Orientation="Horizontal">
-                        <Image Source="/Assets/riot.png" Width="18" Height="18" Margin="0,0,12,0" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
+                        <Image Source="/Assets/riot.png" Width="30" Height="30" Margin="0,0,12,0" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
                         <TextBlock Text="Riot Games" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
@@ -240,9 +241,9 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <Border Grid.Column="0" Width="40" Height="40" CornerRadius="6" Background="#232733" Margin="0,0,12,0" VerticalAlignment="Center" ClipToBounds="True" BorderBrush="#303544" BorderThickness="1">
+                                <Border Grid.Column="0" Width="52" Height="52" CornerRadius="6" Background="#232733" Margin="0,0,12,0" VerticalAlignment="Center" ClipToBounds="False" BorderBrush="#E6FFFFFF" BorderThickness="3" Panel.ZIndex="1">
                                     <Grid>
-                                    <Image x:Name="AccountAvatar" Source="{Binding AvatarPath}" Stretch="UniformToFill">
+                                    <Image x:Name="AccountAvatar" Source="{Binding AvatarPath}" Stretch="UniformToFill" Margin="3">
                                         <Image.Style>
                                             <Style TargetType="Image">
                                                 <Style.Triggers>
@@ -264,7 +265,7 @@
                                             </Style>
                                         </Image.Style>
                                     </Image>
-                                    <Image Source="/Assets/cat_frame.png" Stretch="Fill" IsHitTestVisible="False"><Image.Style><Style TargetType="Image"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Platform}" Value="Steam"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></Image.Style></Image></Grid>
+                                    <Image Source="/Assets/cat_frame.png" Stretch="Fill" IsHitTestVisible="False" Margin="-3"><Image.Style><Style TargetType="Image"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Platform}" Value="Steam"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></Image.Style></Image></Grid>
                                 </Border>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="15" Foreground="{StaticResource TextWhite}" />
