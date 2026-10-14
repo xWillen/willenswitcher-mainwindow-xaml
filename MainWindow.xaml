@@ -11,7 +11,7 @@
         WindowStyle="None"
         AllowsTransparency="True"
         ResizeMode="CanResize"
-        Background="#0F1117">
+        Background="Transparent">
     <Window.Resources>
         <SolidColorBrush x:Key="PanelBrush" Color="#161922" />
         <SolidColorBrush x:Key="MutedBrush" Color="#9299AA" />
@@ -166,6 +166,8 @@
     </Window.Resources>
 
     <Grid>
+        <Image Source="/Assets/bg.png" Stretch="UniformToFill" Opacity="0.8" Grid.ColumnSpan="2" IsHitTestVisible="False" Panel.ZIndex="-2" />
+        <Border Background="#CC0F1117" Grid.ColumnSpan="2" IsHitTestVisible="False" Panel.ZIndex="-1" />
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="220" />
             <ColumnDefinition Width="*" />
@@ -200,12 +202,6 @@
                     <StackPanel Orientation="Horizontal">
                         <Image Source="/Assets/riot.png" Width="18" Height="18" Margin="0,0,12,0" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
                         <TextBlock Text="Riot Games" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
-                <Button Tag="Epic" Click="PlatformNav_Click" Style="{StaticResource NavButtonStyle}">
-                    <StackPanel Orientation="Horizontal">
-                        <Image Source="/Assets/epic.png" Width="18" Height="18" Margin="0,0,12,0" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
-                        <TextBlock Text="Epic Games" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
             </StackPanel>
@@ -245,24 +241,11 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <Border Grid.Column="0" Width="40" Height="40" CornerRadius="6" Background="#232733" Margin="0,0,12,0" VerticalAlignment="Center" ClipToBounds="True" BorderBrush="#303544" BorderThickness="1">
+                                    <Grid>
                                     <Image x:Name="AccountAvatar" Source="{Binding AvatarPath}" Stretch="UniformToFill">
                                         <Image.Style>
                                             <Style TargetType="Image">
                                                 <Style.Triggers>
-                                                    <MultiDataTrigger>
-                                                        <MultiDataTrigger.Conditions>
-                                                            <Condition Binding="{Binding AvatarSource}" Value="{x:Null}" />
-                                                            <Condition Binding="{Binding Platform}" Value="Epic" />
-                                                        </MultiDataTrigger.Conditions>
-                                                        <Setter Property="Source" Value="/Assets/epic.png" />
-                                                    </MultiDataTrigger>
-                                                    <MultiDataTrigger>
-                                                        <MultiDataTrigger.Conditions>
-                                                            <Condition Binding="{Binding AvatarSource}" Value="" />
-                                                            <Condition Binding="{Binding Platform}" Value="Epic" />
-                                                        </MultiDataTrigger.Conditions>
-                                                        <Setter Property="Source" Value="/Assets/epic.png" />
-                                                    </MultiDataTrigger>
                                                     <MultiDataTrigger>
                                                         <MultiDataTrigger.Conditions>
                                                             <Condition Binding="{Binding AvatarSource}" Value="{x:Null}" />
@@ -281,6 +264,7 @@
                                             </Style>
                                         </Image.Style>
                                     </Image>
+                                    <Image Source="/Assets/cat_frame.png" Stretch="Fill" IsHitTestVisible="False"><Image.Style><Style TargetType="Image"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers><DataTrigger Binding="{Binding Platform}" Value="Steam"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers></Style></Image.Style></Image></Grid>
                                 </Border>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="15" Foreground="{StaticResource TextWhite}" />
